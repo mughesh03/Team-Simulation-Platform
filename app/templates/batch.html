@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Batch Simulations{% endblock %}
+{% block content %}
+<nav><a href="/">← Home</a></nav>
+<h1>Flow 1 — AI-only batch simulations</h1>
+<p>Configure a mock agent team, run simulations concurrently, monitor progress, and persist every completed run to JSONL.</p>
+<div class="card form-grid">
+  <label>Number of simulations<input id="numSims" type="number" value="20" min="1" max="5000"></label>
+  <label>Number of agents<input id="numAgents" type="number" value="3" min="1" max="12"></label>
+  <label>Rounds per simulation<input id="numRounds" type="number" value="6" min="1" max="100"></label>
+  <label>Team structure<select id="teamStructure"><option value="sequential">Sequential</option><option value="parallel">Parallel</option><option value="hierarchical">Hierarchical</option></select></label>
+  <label>Concurrency<input id="concurrency" type="number" value="5" min="1" max="100"></label>
+  <label>Random seed (optional)<input id="seed" type="number" placeholder="e.g. 12345"></label>
+  <button id="startBtn">Run batch</button>
+</div>
+<div class="card" id="progressCard" style="display:none;"><h2>Progress</h2><div id="progressText">0 / 0</div><div class="progress-bar-track"><div class="progress-bar-fill" id="progressFill"></div></div></div>
+<div class="card" id="resultsCard" style="display:none;"><h2>Results</h2><p id="avgAgreement"></p><p><a id="csvLink" class="button secondary" href="#">Download results CSV</a></p><div id="bars"></div></div>
+<script>
+const $=id=>document.getElementById(id); let pollTimer=null;
+async function startBatch(){
+  $('resultsCard').style.display='none'; $('bars').innerHTML=''; $('startBtn').disabled=true;
+  const seed=$('seed').value.trim();
+  const payload={num_simulations:+$('numSims').value,num_agents:+$('numAgents').value,num_rounds:+$('numRounds').value,team_structure:$('teamStructure').value,concurrency:+$('concurrency').value,random_seed:seed===''?null:+seed};
+  const res=await fetch('/api/batch/start',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}); const data=await res.json();
+  $('progressCard').style.display='block'; pollStatus(data.job_id);
+}
+function pollStatus(jobId){ pollTimer=setInterval(async()=>{const s=await (await fetch(`/api/batch/${jobId}/status`)).json(); if(s.error){clearInterval(pollTimer);return;} $('progressText').textContent=`${s.completed} / ${s.total}`; $('progressFill').style.width=(s.total?s.completed/s.total*100:0)+'%'; if(s.status==='done'){clearInterval(pollTimer);$('startBtn').disabled=false;$('csvLink').href=`/api/batch/${jobId}/results.csv`;showResults(await (await fetch(`/api/batch/${jobId}/results`)).json());}},400); }
+function showResults(r){$('resultsCard').style.display='block';$('avgAgreement').textContent=`Average toy agreement score: ${r.avg_agreement}`;r.summaries.forEach((s,i)=>{const row=document.createElement('div');row.className='bar-row';row.innerHTML=`<span style="width:70px">Sim ${i+1}</span><div class="bar-track"><div class="bar-fill" style="width:${s.toy_agreement_score*100}%"></div></div><span style="width:40px">${s.toy_agreement_score}</span>`;$('bars').appendChild(row);});}
+$('startBtn').addEventListener('click',startBatch);
+</script>
+{% endblock %}

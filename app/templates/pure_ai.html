@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+
+{% block title %}Configure Pure AI Team{% endblock %}
+
+{% block content %}
+<nav class="mt-4"><a href="/">← Back to Selection</a></nav>
+<h1>Pure AI Team Configuration</h1>
+<p>Configure and launch a batch of AI-only team simulations.</p>
+
+<form id="pureAiForm" class="mt-8">
+  <div class="grid-2">
+    <!-- LLM Configuration -->
+    <div class="card">
+      <h2>1. LLM Configuration</h2>
+      <label>Provider Model
+        <select id="modelName">
+          <option value="gpt-4-turbo">OpenAI GPT-4 Turbo</option>
+          <option value="gpt-3.5-turbo">OpenAI GPT-3.5</option>
+          <option value="claude-3-opus">Anthropic Claude 3 Opus</option>
+          <option value="mock" selected>Mock Backend (Fast Testing)</option>
+        </select>
+      </label>
+      <label>API Key (Optional for Mock)
+        <input type="password" id="apiKey" placeholder="sk-...">
+      </label>
+      <label>Temperature (<span id="tempVal">0.7</span>)
+        <input type="range" id="temperature" min="0" max="2" step="0.1" value="0.7" oninput="document.getElementById('tempVal').innerText=this.value">
+      </label>
+    </div>
+
+    <!-- Task Configuration -->
+    <div class="card">
+      <h2>2. Task Configuration</h2>
+      <label>Select Task
+        <select id="taskType">
+          <option value="lost_at_sea">Lost at Sea (Scored)</option>
+          <option value="hiring">Hiring Decision (Unscored)</option>
+          <option value="custom">Custom Prompt...</option>
+        </select>
+      </label>
+      <div id="customTaskGroup" style="display:none;">
+        <label>Custom Task Prompt
+          <textarea id="customPrompt" placeholder="Enter task instructions for the team..."></textarea>
+        </label>
+        <label>Is this task scored?
+          <select id="isScored">
+            <option value="true">Yes</option>
+            <option value="false">No</option>
+          </select>
+        </label>
+      </div>
+    </div>
+
+    <!-- AI Team Configuration -->
+    <div class="card">
+      <h2>3. AI Team Configuration</h2>
+      <div class="form-grid">
+        <label>Number of Agents
+          <input type="number" id="numAgents" value="3" min="1" max="12">
+        </label>
+        <label>Discussion Rounds
+          <input type="number" id="numRounds" value="6" min="1" max="20">
+        </label>
+        <label class="full-width">Interdependence Structure
+          <select id="teamStructure">
+            <option value="pooled">Pooled (Independent work aggregated at end)</option>
+            <option value="sequential">Sequential (Pass work to next agent)</option>
+            <option value="reciprocal">Reciprocal (Iterative back-and-forth)</option>
+            <option value="team">Team (Simultaneous group discussion)</option>
+          </select>
+        </label>
+      </div>
+    </div>
+
+    <!-- Simulation Settings -->
+    <div class="card">
+      <h2>4. Simulations</h2>
+      <div class="form-grid">
+        <label>Replications
+          <input type="number" id="numSimulations" value="20" min="1" max="1000">
+        </label>
+        <label>Concurrency Limit
+          <input type="number" id="concurrency" value="5" min="1" max="50">
+        </label>
+        <label class="full-width">Random Seed (Optional)
+          <input type="number" id="seed" placeholder="e.g. 12345">
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <div class="card mt-4" style="border-color: var(--primary);">
+    <div class="flex-between">
+      <div>
+        <h3>Ready to Launch?</h3>
+        <p style="margin:0; font-size: 0.9rem;">Review settings before starting batch execution.</p>
+      </div>
+      <button type="submit" id="startBtn" style="padding: 1rem 2rem; font-size: 1.1rem;">Start Experiment</button>
+    </div>
+  </div>
+</form>
+
+<!-- Progress Section (Hidden initially) -->
+<div class="card mt-8" id="progressCard" style="display:none;">
+  <div class="flex-between">
+    <h2>Execution Progress</h2>
+    <span id="statusBadge" class="status running">Running</span>
+  </div>
+  <div class="progress-container">
+    <div class="flex-between" style="font-size: 0.9rem; font-weight: 500;">
+      <span id="progressText">0 / 0 completed</span>
+      <span id="progressPercent">0%</span>
+    </div>
+    <div class="progress-bar-track">
+      <div class="progress-bar-fill" id="progressFill"></div>
+    </div>
+  </div>
+  <div id="resultsActions" class="mt-4" style="display:none; text-align:right;">
+    <a href="#" id="dashboardLink" class="button">View Results Dashboard</a>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.getElementById('taskType').addEventListener('change', (e) => {
+    document.getElementById('customTaskGroup').style.display = (e.target.value === 'custom') ? 'block' : 'none';
+  });
+  
+  // Note: Form submission logic will be handled by app.js, which we will build shortly.
+  // The backend API for this will be /api/experiment/pure-ai/start
+</script>
+{% endblock %}

@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}Run/Session Viewer{% endblock %}
+
+{% block content %}
+<nav class="mt-4"><a href="javascript:history.back()">← Back</a></nav>
+
+<div class="flex-between mt-4">
+  <div>
+    <h1>Run Viewer</h1>
+    <p style="margin:0; font-family: monospace; color: var(--text-secondary);">Run ID: <span id="runIdDisplay"></span></p>
+  </div>
+</div>
+
+<div class="card mt-4" style="background: rgba(0,0,0,0.4); border-color: var(--primary);">
+  <div style="display: flex; flex-wrap: wrap; gap: 2rem; font-size: 0.9rem;">
+    <div><strong style="color: var(--text-secondary); display:block;">Task</strong> <span id="runTask" style="color: white;">--</span></div>
+    <div><strong style="color: var(--text-secondary); display:block;">Model</strong> <span id="runModel" style="color: white;">--</span></div>
+    <div><strong style="color: var(--text-secondary); display:block;">Agents</strong> <span id="runAgents" style="color: white;">--</span></div>
+    <div><strong style="color: var(--text-secondary); display:block;">Structure</strong> <span id="runStructure" style="color: white;">--</span></div>
+    <div><strong style="color: var(--text-secondary); display:block;">Score</strong> <span id="runScore" style="color: var(--success); font-weight: bold; font-size: 1.1rem;">--</span></div>
+    <div><strong style="color: var(--text-secondary); display:block;">Tokens</strong> <span id="runTokens" style="color: white;">--</span></div>
+  </div>
+</div>
+
+<div class="mt-8">
+  <h2>Conversation Transcript</h2>
+  <div id="fullTranscript" style="
+    background: #000; 
+    border: 1px solid var(--card-border); 
+    border-radius: var(--radius-md); 
+    padding: 2rem; 
+    font-family: 'JetBrains Mono', monospace; 
+    font-size: 0.9rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  ">
+    <!-- Populated by JS -->
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block title %}Configure AI Team + Human-in-the-Loop{% endblock %}
+
+{% block content %}
+<nav class="mt-4"><a href="/">← Back to Selection</a></nav>
+<h1>Human-in-the-Loop Study</h1>
+<p>Configure an AI team and define strict intervention rules for human participants.</p>
+
+<form id="hitlForm" class="mt-8">
+  <div class="grid-2">
+    <!-- LLM Configuration -->
+    <div class="card">
+      <h2>1. LLM Configuration</h2>
+      <label>Provider Model
+        <select id="modelName">
+          <option value="gpt-4-turbo">OpenAI GPT-4 Turbo</option>
+          <option value="mock" selected>Mock Backend (Fast Testing)</option>
+        </select>
+      </label>
+      <label>API Key (Optional for Mock)
+        <input type="password" id="apiKey" placeholder="sk-...">
+      </label>
+    </div>
+
+    <!-- Task Configuration -->
+    <div class="card">
+      <h2>2. Task Configuration</h2>
+      <label>Select Task
+        <select id="taskType">
+          <option value="lost_at_sea">Lost at Sea (Scored)</option>
+          <option value="hiring">Hiring Decision (Unscored)</option>
+        </select>
+      </label>
+    </div>
+
+    <!-- AI Team Configuration -->
+    <div class="card">
+      <h2>3. AI Team Configuration</h2>
+      <div class="form-grid">
+        <label>Number of Agents
+          <input type="number" id="numAgents" value="3" min="1" max="12">
+        </label>
+        <label>Discussion Rounds
+          <input type="number" id="numRounds" value="10" min="1" max="20">
+        </label>
+        <label class="full-width">Interdependence Structure
+          <select id="teamStructure">
+            <option value="pooled">Pooled (Independent work aggregated at end)</option>
+            <option value="sequential">Sequential (Pass work to next agent)</option>
+            <option value="reciprocal">Reciprocal (Iterative back-and-forth)</option>
+            <option value="team">Team (Simultaneous group discussion)</option>
+          </select>
+        </label>
+      </div>
+    </div>
+
+    <!-- Human Intervention Settings -->
+    <div class="card" style="border-color: var(--accent);">
+      <h2 style="color: var(--accent);">4. Human Intervention Rules</h2>
+      <label>When can participant intervene?
+        <select id="interveneWhen">
+          <option value="any">Between any AI-agent turns (Anytime when paused)</option>
+          <option value="rounds">Between discussion rounds only</option>
+        </select>
+      </label>
+      <label>How is intervention presented to AI?
+        <select id="presentationMode">
+          <option value="human_teammate">As a human teammate message</option>
+          <option value="system_instruction">As a system instruction</option>
+        </select>
+      </label>
+      <label>Participant Instructions (shown before start)
+        <textarea id="participantInstructions" placeholder="Welcome! You will observe an AI team. You may pause and intervene to help them..."></textarea>
+      </label>
+    </div>
+  </div>
+
+  <div class="card mt-4" style="background: linear-gradient(to right, rgba(23,32,51,0.6), rgba(139,92,246,0.1));">
+    <div class="flex-between">
+      <div>
+        <h3>Generate Session</h3>
+        <p style="margin:0; font-size: 0.9rem;">Creates a unique link for a participant.</p>
+      </div>
+      <button type="submit" id="createBtn" style="padding: 1rem 2rem; font-size: 1.1rem; background: var(--accent);">Create Participant Session</button>
+    </div>
+  </div>
+</form>
+
+<!-- Session Links (Hidden initially) -->
+<div class="card mt-8" id="sessionsCard" style="display:none;">
+  <h2>Active Participant Sessions</h2>
+  <div id="sessionList" class="mt-4">
+    <!-- Populated by JS -->
+  </div>
+</div>
+{% endblock %}

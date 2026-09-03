@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block title %}Researcher Login{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: center; align-items: center; min-height: 60vh;">
+  <div class="card" style="width: 100%; max-width: 400px;">
+    <h1 style="font-size: 1.8rem; text-align: center;">Researcher Login</h1>
+    <p style="text-align: center;">Authenticate to configure experiments and view data.</p>
+    
+    <form action="/login" method="POST" class="mt-4">
+      <label>Password
+        <input type="password" name="password" required autofocus>
+      </label>
+      <button type="submit" class="button mt-4" style="width: 100%;">Log In</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

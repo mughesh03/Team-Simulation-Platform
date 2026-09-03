@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block title %}Experiment History{% endblock %}
+
+{% block content %}
+<div class="flex-between mt-4">
+  <h1>Experiment History</h1>
+  <a href="/" class="button">Create New Experiment</a>
+</div>
+
+<div class="card mt-8">
+  <table style="width: 100%; text-align: left; border-collapse: collapse;">
+    <thead>
+      <tr style="border-bottom: 1px solid var(--card-border); color: var(--text-secondary);">
+        <th style="padding: 1rem 0;">Type</th>
+        <th style="padding: 1rem 0;">Date</th>
+        <th style="padding: 1rem 0;">Configuration</th>
+        <th style="padding: 1rem 0;">Status</th>
+        <th style="padding: 1rem 0; text-align: right;">Actions</th>
+      </tr>
+    </thead>
+    <tbody id="experimentTableBody">
+      <!-- Populated by JS -->
+    </tbody>
+  </table>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Will fetch from /api/experiments and populate table
+</script>
+{% endblock %}

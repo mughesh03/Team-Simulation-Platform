@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Human + AI Session{% endblock %}
+{% block content %}
+<nav><a href="/">← Home</a></nav>
+<h1>Flow 2 — Human + AI experiment</h1>
+<p>Mock agents converse automatically. The participant can pause the team, provide new information, contribute to the team discussion, or ask a specific agent a question.</p>
+<div class="card form-grid" id="setupCard">
+  <label>Number of agents<input id="numAgents" type="number" value="3" min="1" max="12"></label>
+  <label>Number of rounds<input id="numRounds" type="number" value="10" min="1" max="100"></label>
+  <label>Team structure<select id="teamStructure"><option value="sequential">Sequential</option><option value="parallel">Parallel</option><option value="hierarchical">Hierarchical</option></select></label>
+  <label>Random seed (optional)<input id="seed" type="number" placeholder="e.g. 12345"></label>
+  <button id="startBtn">Start session</button>
+</div>
+<div class="card" id="liveCard" style="display:none;">
+  <div class="status-row"><span id="statusBadge" class="status running">RUNNING</span><span id="sessionLabel"></span></div>
+  <button id="pauseBtn" class="danger">Pause team</button><button id="resumeBtn" class="secondary" disabled>Resume team</button><a id="csvLink" class="button secondary" href="#">Download event CSV</a>
+</div>
+<div class="layout" id="experimentLayout" style="display:none;">
+  <section class="card"><h2>Team conversation</h2><div id="log"></div></section>
+  <aside class="card">
+    <h2>Human intervention</h2>
+    <label>Provide additional information<textarea id="infoInput" placeholder="New evidence or task information..."></textarea></label><button id="infoBtn">Inject information</button>
+    <hr>
+    <label>Contribute to team discussion<textarea id="teamInput" placeholder="Your message to the whole team..."></textarea></label><button id="teamBtn">Send team message</button>
+    <hr>
+    <label>Ask a specific agent<select id="recipient"></select><textarea id="questionInput" placeholder="Question for this agent..."></textarea></label><button id="questionBtn">Ask agent</button>
+  </aside>
+</div>
+<script>
+const $=id=>document.getElementById(id); let ws=null;
+function appendLog(text,cls){const d=document.createElement('div');d.className='log-line '+(cls||'');d.textContent=text;$('log').appendChild(d);$('log').scrollTop=$('log').scrollHeight;}
+function send(action,text=null,recipient=null){if(!ws||ws.readyState!==WebSocket.OPEN)return;const p={action};if(text!==null)p.text=text;if(recipient)p.recipient=recipient;ws.send(JSON.stringify(p));}
+async function startSession(){const seed=$('seed').value.trim(); const payload={num_agents:+$('numAgents').value,num_rounds:+$('numRounds').value,team_structure:$('teamStructure').value,random_seed:seed===''?null:+seed}; const data=await (await fetch('/api/session/start',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})).json(); $('setupCard').style.display='none';$('liveCard').style.display='block';$('experimentLayout').style.display='grid';$('sessionLabel').textContent='Session '+data.session_id.slice(0,8);$('csvLink').href=`/api/session/${data.session_id}/events.csv`; $('recipient').innerHTML=data.agent_names.map(a=>`<option value="${a}">${a}</option>`).join(''); const proto=location.protocol==='https:'?'wss':'ws'; ws=new WebSocket(`${proto}://${location.host}/ws/session/${data.session_id}`); ws.onopen=()=>appendLog('Session connected.','log-status'); ws.onmessage=e=>{const m=JSON.parse(e.data);if(m.type==='message'){const human=m.agent==='Human';appendLog(`${m.agent}${m.event_type?' ['+m.event_type+']':''}: ${m.text}`,human?'log-human':'log-agent');}else if(m.type==='status'){appendLog(`(${m.text})`,'log-status');$('statusBadge').textContent=m.text.toUpperCase();$('statusBadge').className='status '+(m.text==='paused'?'paused':'running');}else if(m.type==='done'){appendLog(`Session complete: ${JSON.stringify(m.summary)}`,'log-status');$('statusBadge').textContent='COMPLETED';$('pauseBtn').disabled=true;$('resumeBtn').disabled=true;}else if(m.type==='error')appendLog('Error: '+m.text,'log-status');}; ws.onclose=()=>appendLog('Browser connection closed. The JSONL log remains on disk.','log-status');}
+$('startBtn').onclick=startSession; $('pauseBtn').onclick=()=>{send('pause');$('pauseBtn').disabled=true;$('resumeBtn').disabled=false;}; $('resumeBtn').onclick=()=>{send('resume');$('resumeBtn').disabled=true;$('pauseBtn').disabled=false;};
+$('infoBtn').onclick=()=>{const t=$('infoInput').value.trim();if(t){send('inject_info',t);$('infoInput').value='';}}; $('teamBtn').onclick=()=>{const t=$('teamInput').value.trim();if(t){send('team_message',t);$('teamInput').value='';}}; $('questionBtn').onclick=()=>{const t=$('questionInput').value.trim();if(t){send('ask_agent',t,$('recipient').value);$('questionInput').value='';}};
+</script>
+{% endblock %}

@@ -1,0 +1,8 @@
+__pycache__/
+*.py[cod]
+.venv/
+.env
+data/batches/*.jsonl
+data/batches/*.config.json
+data/sessions/*.jsonl
+data/sessions/*.config.json

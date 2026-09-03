@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}Team Simulation Platform - Select Experiment{% endblock %}
+
+{% block content %}
+<div class="text-center mt-4">
+  <h1>Choose Experiment Type</h1>
+  <p>Select the type of multi-agent team study you want to configure and run.</p>
+</div>
+
+<div class="grid-2 mt-8">
+  <section class="card" style="display: flex; flex-direction: column; justify-content: space-between;">
+    <div>
+      <div style="margin-bottom: 1rem; color: var(--primary);">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect>
+          <rect x="9" y="9" width="6" height="6"></rect>
+          <line x1="9" y1="1" x2="9" y2="4"></line>
+          <line x1="15" y1="1" x2="15" y2="4"></line>
+          <line x1="9" y1="20" x2="9" y2="23"></line>
+          <line x1="15" y1="20" x2="15" y2="23"></line>
+          <line x1="20" y1="9" x2="23" y2="9"></line>
+          <line x1="20" y1="14" x2="23" y2="14"></line>
+          <line x1="1" y1="9" x2="4" y2="9"></line>
+          <line x1="1" y1="14" x2="4" y2="14"></line>
+        </svg>
+      </div>
+      <h2>Pure AI Team</h2>
+      <p>Configure a team of AI agents to complete tasks without human participation. Supports batch simulations across pooled, sequential, reciprocal, and team interdependence structures.</p>
+    </div>
+    <a class="button" href="/pure-ai" style="width: 100%; margin-top: 2rem;">Configure Pure AI Study →</a>
+  </section>
+
+  <section class="card" style="display: flex; flex-direction: column; justify-content: space-between;">
+    <div>
+      <div style="margin-bottom: 1rem; color: var(--accent);">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+          <circle cx="9" cy="7" r="4"></circle>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+        </svg>
+      </div>
+      <h2>AI Team + Human-in-the-Loop</h2>
+      <p>A human participant observes the AI team and can intervene during the interaction. Configure the team and define strict intervention rules for the participant session.</p>
+    </div>
+    <a class="button" href="/hitl" style="width: 100%; margin-top: 2rem; background: linear-gradient(135deg, var(--accent), #d946ef);">Configure HITL Study →</a>
+  </section>
+</div>
+{% endblock %}

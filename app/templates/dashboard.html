@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block title %}Results Dashboard - {{ experiment_id }}{% endblock %}
+
+{% block content %}
+<nav class="mt-4"><a href="/experiments">← Back to Experiments</a></nav>
+
+<div class="flex-between mt-4">
+  <div>
+    <h1>Experiment Dashboard</h1>
+    <p style="margin:0; font-family: monospace;">ID: {{ experiment_id }}</p>
+  </div>
+  <div class="flex-between gap-2">
+    <a href="/api/experiment/{{ experiment_id }}/download" class="button secondary">Download Data (ZIP)</a>
+    <a href="/experiment/{{ experiment_id }}/runs" class="button">View Individual Runs</a>
+  </div>
+</div>
+
+<div class="grid-2 mt-8">
+  <!-- Performance -->
+  <div class="card">
+    <h2 style="color: var(--primary);">Performance</h2>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 2rem;">
+      <div style="background: rgba(0,0,0,0.2); padding: 1rem; border-radius: var(--radius-sm); text-align: center;">
+        <div style="font-size: 2rem; font-weight: 700; color: white;" id="meanScore">--</div>
+        <div style="font-size: 0.85rem; color: var(--text-secondary);">Mean Score</div>
+      </div>
+      <div style="background: rgba(0,0,0,0.2); padding: 1rem; border-radius: var(--radius-sm); text-align: center;">
+        <div style="font-size: 2rem; font-weight: 700; color: white;" id="medianScore">--</div>
+        <div style="font-size: 0.85rem; color: var(--text-secondary);">Median Score</div>
+      </div>
+    </div>
+    
+    <div>
+      <div class="flex-between mb-2">
+        <span style="font-size: 0.85rem;">Std Dev: <strong id="stdDev">--</strong></span>
+        <span style="font-size: 0.85rem;">Range: <strong id="scoreRange">--</strong></span>
+      </div>
+      
+      <h3 style="font-size: 1rem; margin-top: 1.5rem; margin-bottom: 0.5rem;">Score Distribution</h3>
+      <div id="distributionChart" style="height: 150px; display: flex; align-items: flex-end; gap: 4px; border-bottom: 1px solid var(--card-border);">
+        <!-- Bar chart rendered by JS -->
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 2rem;">
+    <!-- Efficiency -->
+    <div class="card">
+      <h2 style="color: var(--accent);">Efficiency & Usage</h2>
+      
+      <div class="bar-row">
+        <span class="bar-label" style="width: 120px;">Input Tokens</span>
+        <div class="bar-track"><div class="bar-fill" id="inputFill" style="width: 0%; background: var(--accent);"></div></div>
+        <span class="bar-value" id="inputTokens" style="width: 80px;">--</span>
+      </div>
+      <div class="bar-row">
+        <span class="bar-label" style="width: 120px;">Output Tokens</span>
+        <div class="bar-track"><div class="bar-fill" id="outputFill" style="width: 0%; background: var(--accent);"></div></div>
+        <span class="bar-value" id="outputTokens" style="width: 80px;">--</span>
+      </div>
+      <div class="bar-row">
+        <span class="bar-label" style="width: 120px; font-weight: bold; color: white;">Total Tokens</span>
+        <div class="bar-track" style="background: transparent;"></div>
+        <span class="bar-value" id="totalTokens" style="width: 80px; font-weight: bold; color: white;">--</span>
+      </div>
+      
+      <hr style="border-color: rgba(255,255,255,0.05); margin: 1rem 0;">
+      
+      <div class="flex-between">
+        <span style="color: var(--text-secondary);">Avg. Conversation Turns</span>
+        <strong style="color: white; font-size: 1.2rem;" id="avgTurns">--</strong>
+      </div>
+      <div class="flex-between mt-2">
+        <span style="color: var(--text-secondary);">Avg. Run Duration</span>
+        <strong style="color: white; font-size: 1.2rem;" id="avgDuration">--</strong>
+      </div>
+    </div>
+
+    <!-- Reliability -->
+    <div class="card">
+      <h2>Reliability</h2>
+      <div class="flex-between">
+        <span style="color: var(--text-secondary);">Completed Runs</span>
+        <strong style="color: var(--success); font-size: 1.2rem;" id="completedRuns">--</strong>
+      </div>
+      <div class="flex-between mt-2">
+        <span style="color: var(--text-secondary);">Failed/Errors</span>
+        <strong style="color: var(--danger); font-size: 1.2rem;" id="failedRuns">--</strong>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
