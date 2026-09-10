@@ -6,6 +6,7 @@ const $ = id => document.getElementById(id);
 
 // ─── Model Labels ──────────────────────────────────────────────────
 const MODEL_LABELS = {
+  'kimi-k2.5':         'Kimi K2.5 (UVA)',
   'gpt-4o':            'OpenAI GPT-4o',
   'gpt-4-turbo':       'OpenAI GPT-4 Turbo',
   'gpt-3.5-turbo':     'OpenAI GPT-3.5 Turbo',
@@ -17,6 +18,7 @@ const MODEL_LABELS = {
 };
 
 const MODEL_COLORS = {
+  'kimi-k2.5':         '#1783ff',
   'gpt-4o':            '#10a37f',
   'gpt-4-turbo':       '#10a37f',
   'gpt-3.5-turbo':     '#19c37d',
@@ -177,6 +179,12 @@ function initPureAiForm() {
     if (btn) btn.disabled = true;
 
     const { llm, task } = collectLlmAndTaskData();
+    const usingKimi = (llm.selected_models || []).includes('kimi-k2.5') || llm.provider_model === 'kimi-k2.5';
+    if (usingKimi && !(llm.api_key || '').trim()) {
+      alert('Paste your UVA RC GenAI / ITS API key before starting a Kimi K2.5 run.');
+      if (btn) btn.disabled = false;
+      return;
+    }
 
     const payload = {
       llm, task,
@@ -220,8 +228,16 @@ function pollProgress(id) {
     if (s.status === 'done' || s.status === 'error') {
       clearInterval(timer);
       if ($('statusBadge')) { $('statusBadge').className = s.status === 'done' ? 'status completed' : 'status paused'; $('statusBadge').innerText = s.status.toUpperCase(); }
-      if ($('resultsActions')) $('resultsActions').style.display = 'block';
-      if ($('dashboardLink'))  $('dashboardLink').href = `/experiment/${id}/dashboard`;
+      if (s.status === 'error') {
+        if ($('errorText')) {
+          $('errorText').style.display = 'block';
+          $('errorText').innerText = s.error || 'The experiment failed. Check the API key and endpoint.';
+        }
+        if ($('startBtn')) $('startBtn').disabled = false;
+      } else {
+        if ($('resultsActions')) $('resultsActions').style.display = 'block';
+        if ($('dashboardLink'))  $('dashboardLink').href = `/experiment/${id}/dashboard`;
+      }
     }
   }, 1000);
 }
@@ -238,6 +254,11 @@ function initHitlForm() {
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const { llm, task } = collectLlmAndTaskData();
+    const usingKimi = (llm.selected_models || []).includes('kimi-k2.5') || llm.provider_model === 'kimi-k2.5';
+    if (usingKimi && !(llm.api_key || '').trim()) {
+      alert('Paste your UVA RC GenAI / ITS API key before creating a Kimi K2.5 session.');
+      return;
+    }
 
     const payload = {
       llm, task,

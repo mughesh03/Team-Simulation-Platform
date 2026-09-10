@@ -12,6 +12,7 @@ import uuid
 from pathlib import Path
 from typing import Dict, Literal, Optional, Any
 
+from dotenv import load_dotenv
 from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse, Response
 from fastapi.staticfiles import StaticFiles
@@ -20,6 +21,8 @@ from pydantic import BaseModel, Field
 
 from .agents import agent_turn, answer_human_question, make_agent_names, summarize_transcript
 from . import storage
+
+load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 BASE_DIR = Path(__file__).resolve().parent
 app = FastAPI(title="Team Simulation Platform - Combined MVP")
@@ -34,6 +37,12 @@ def startup():
 
 BATCH_JOBS: Dict[str, dict] = {}
 SESSIONS: Dict[str, "HumanLoopSession"] = {}
+_SECRET_KEYS = {"api_key", "apiKey", "multiApiKey"}
+
+
+def public_config(params: dict) -> dict:
+    """Drop credentials before persisting or returning config to the browser."""
+    return {k: v for k, v in params.items() if k not in _SECRET_KEYS}
 
 
 class ExperimentParams(BaseModel):
@@ -157,14 +166,19 @@ async def start_batch(payload: Dict[str, Any]):
             "selected_models": llm_info.get("selected_models", [llm_info.get("provider_model", "mock")]),
             "llm_tasks": task_info.get("llm_tasks", {}),
             "custom_prompt": task_info.get("custom_prompt", ""),
-            "task_type": task_info.get("type", "lost_at_sea")
+            "task_type": task_info.get("type", "lost_at_sea"),
+            "api_key": llm_info.get("api_key", ""),
+            "temperature": llm_info.get("temperature", 0.7),
+            "max_tokens": llm_info.get("max_tokens", 0),
+            "persona_strategy": payload.get("persona_strategy", "generic"),
+            "experiment_label": payload.get("experiment_label", ""),
         }
     else:
         params_dict = payload
 
     total_sims = params_dict.get("num_simulations", 20)
-    BATCH_JOBS[job_id] = {"status": "running", "completed": 0, "total": total_sims, "results": None, "config": params_dict}
-    storage.save_batch_config(job_id, params_dict)
+    BATCH_JOBS[job_id] = {"status": "running", "completed": 0, "total": total_sims, "results": None, "config": public_config(params_dict)}
+    storage.save_batch_config(job_id, public_config(params_dict))
     asyncio.create_task(run_batch(job_id, params_dict))
     return {"job_id": job_id, "experiment_id": job_id}
 
@@ -274,14 +288,25 @@ async def start_session(payload: Dict[str, Any]):
             "llm_tasks": task_info.get("llm_tasks", {}),
             "custom_prompt": task_info.get("custom_prompt", ""),
             "task_type": task_info.get("type", "lost_at_sea"),
-            "intervention_rules": intervention
+            "intervention_rules": intervention,
+            "api_key": llm_info.get("api_key", ""),
+            "temperature": llm_info.get("temperature", 0.7),
+            "max_tokens": llm_info.get("max_tokens", 0),
+            "persona_strategy": payload.get("persona_strategy", "generic"),
+            "experiment_label": payload.get("experiment_label", ""),
         }
     else:
         params_dict = payload
 
     session = HumanLoopSession(session_id, params_dict)
     SESSIONS[session_id] = session
-    storage.save_session_config(session_id, {"mode": "human_ai", "mock_backend": True, **params_dict, "agent_names": session.agent_names})
+    live = any(m != "mock" for m in params_dict.get("selected_models", [params_dict.get("provider_model", "mock")]))
+    storage.save_session_config(session_id, {
+        "mode": "human_ai",
+        "mock_backend": not live,
+        **public_config(params_dict),
+        "agent_names": session.agent_names,
+    })
     await storage.log_session_event(session_id, "system", "SESSION_CREATED", "Interactive session created")
     return {"session_id": session_id, "session_code": session_id[:8], "agent_names": session.agent_names}
 
@@ -460,7 +485,7 @@ async def session_info(session_id: str):
     return {
         "session_id": session.session_id,
         "agent_names": session.agent_names,
-        "params": session.params,
+        "params": public_config(session.params),
         "instructions": session.params.get("intervention_rules", {}).get("instructions", ""),
     }
 

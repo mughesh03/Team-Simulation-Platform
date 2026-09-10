@@ -1,14 +1,17 @@
-"""Mock agent backend — realistic demo responses for prototype.
+"""Agent backend — mock responses plus a live Kimi K2.5 path.
 
-Replace ``agent_turn`` with the real LLM/agent implementation later.  The
-rest of the web application only depends on the return shape documented here.
+``agent_turn`` / ``answer_human_question`` keep a stable return shape.
+Kimi K2.5 is called when that model is selected and an API key is present.
 """
 
 import asyncio
+import os
 import random
 import hashlib
 import json
 import time
+
+import httpx
 
 # ── Realistic mock dialogue lines keyed by task ──────────────────
 
@@ -89,16 +92,259 @@ _GENERIC_LINES = [
 ]
 
 
+KIMI_MODELS = {"kimi-k2.5"}
+_TASK_PROMPTS = {
+    "lost_at_sea": (
+        "You are on a team ranking 15 items for survival after a shipwreck in the Atlantic. "
+        "Discuss, challenge, and converge on a ranked list. Prioritize signaling and water."
+    ),
+    "hiring": (
+        "You are on a hiring committee comparing candidates. Discuss technical skill, "
+        "leadership, culture fit, and risk. Work toward a recommendation."
+    ),
+    "desert_survival": (
+        "You are ranking survival items after a desert plane crash. Discuss, challenge, "
+        "and converge on a ranked list. Prioritize signaling, shade, and water."
+    ),
+    "moon_landing": (
+        "You are ranking items for a 200-mile trek across the lunar surface to the mother ship. "
+        "Discuss, challenge, and converge. Prioritize oxygen, water, and navigation."
+    ),
+    "ethical_dilemma": (
+        "You are a team analyzing an ethical dilemma. Use competing moral frameworks, "
+        "name stakeholders, and work toward a defensible recommendation."
+    ),
+    "custom": "Follow the custom task instructions provided by the researcher.",
+}
+
+_http_client: httpx.AsyncClient | None = None
+
+
 def make_agent_names(num_agents: int) -> list[str]:
     return [f"Agent_{i}" for i in range(1, num_agents + 1)]
 
 
-async def agent_turn(agent_name: str, turn_number: int, history: list[dict], params: dict) -> dict:
-    """Produce one agent turn with realistic mock responses."""
-    start = time.time()
-    await asyncio.sleep(random.uniform(0.15, 0.45))
-    elapsed_ms = round((time.time() - start) * 1000)
+def _assigned_model(agent_name: str, params: dict) -> str:
+    models = params.get("selected_models") or [params.get("provider_model", "mock")]
+    if not models:
+        return params.get("provider_model", "mock")
+    try:
+        agent_idx = int(agent_name.split("_")[-1]) - 1 if "_" in agent_name else 0
+    except ValueError:
+        agent_idx = 0
+    return models[agent_idx % len(models)]
 
+
+def _api_key(params: dict) -> str:
+    raw = (
+        str(params.get("api_key") or "").strip()
+        or os.getenv("UVARC_GenAI_API", "").strip()
+        or os.getenv("KIMI_API_KEY", "").strip()
+        or os.getenv("MOONSHOT_API_KEY", "").strip()
+        or os.getenv("OPENROUTER_API_KEY", "").strip()
+    )
+    raw = raw.strip().strip('"').strip("'")
+    if raw.lower().startswith("bearer "):
+        raw = raw[7:].strip()
+    return raw
+
+
+def _kimi_endpoints(api_key: str) -> list[tuple[str, str]]:
+    """UVA RC GenAI Open WebUI chat completions URL."""
+    configured = os.getenv("KIMI_BASE_URL", "").rstrip("/")
+    configured_model = os.getenv("KIMI_MODEL", "Kimi K2.5")
+    if configured:
+        return [(configured, configured_model)]
+    return [("https://open-webui.rc.virginia.edu/api", "Kimi K2.5")]
+
+
+async def _client() -> httpx.AsyncClient:
+    global _http_client
+    if _http_client is None or _http_client.is_closed:
+        _http_client = httpx.AsyncClient(timeout=httpx.Timeout(180.0, connect=20.0), follow_redirects=False)
+    return _http_client
+
+
+def _header_variants(api_key: str) -> list[tuple[str, dict]]:
+    """Open WebUI Bearer first; some UVA proxies also accept an API key header."""
+    return [
+        ("Bearer", {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+            "Accept": "application/json, text/event-stream",
+        }),
+        ("X-API-KEY", {
+            "X-API-KEY": api_key,
+            "Content-Type": "application/json",
+            "Accept": "application/json, text/event-stream",
+        }),
+    ]
+
+
+def _short_body(response: httpx.Response) -> str:
+    text = (response.text or "").replace("\n", " ").strip()
+    location = response.headers.get("location") or ""
+    extra = f" Location={location}" if location else ""
+    return f"HTTP {response.status_code}{extra} {text[:220]}"
+
+
+def _parse_sse(body: str) -> tuple[str, int, int]:
+    text_parts = []
+    input_tokens = output_tokens = 0
+    for raw_line in body.splitlines():
+        line = raw_line.strip()
+        if not line.startswith("data:"):
+            continue
+        data = line[5:].strip()
+        if not data or data == "[DONE]":
+            continue
+        try:
+            chunk = json.loads(data)
+        except json.JSONDecodeError:
+            continue
+        choice = (chunk.get("choices") or [{}])[0]
+        delta = choice.get("delta") or {}
+        message = choice.get("message") or {}
+        piece = delta.get("content") or message.get("content") or ""
+        if piece:
+            text_parts.append(piece)
+        usage = chunk.get("usage") or {}
+        input_tokens = int(usage.get("prompt_tokens") or input_tokens or 0)
+        output_tokens = int(usage.get("completion_tokens") or output_tokens or 0)
+    text = "".join(text_parts).strip()
+    if not text:
+        raise RuntimeError("UVA RC GenAI returned an empty streamed message.")
+    return text, input_tokens, output_tokens
+
+
+def _parse_completion(response: httpx.Response) -> tuple[str, int, int]:
+    body = response.text or ""
+    stripped = body.lstrip()
+    content_type = response.headers.get("content-type", "")
+    if "text/event-stream" in content_type or stripped.startswith("data:"):
+        return _parse_sse(body)
+    try:
+        data = json.loads(body)
+    except json.JSONDecodeError:
+        if "data:" in body:
+            return _parse_sse(body)
+        raise RuntimeError(f"Unexpected UVA RC GenAI response: {body[:300]}")
+    if isinstance(data, dict) and data.get("error"):
+        raise RuntimeError(f"UVA RC GenAI error: {data.get('error')}")
+    choice = (data.get("choices") or [{}])[0]
+    message = choice.get("message") or {}
+    text = (message.get("content") or choice.get("text") or "").strip()
+    if not text:
+        text = ((choice.get("delta") or {}).get("content") or "").strip()
+    if not text:
+        raise RuntimeError("UVA RC GenAI returned an empty message.")
+    usage = data.get("usage") or {}
+    return text, int(usage.get("prompt_tokens") or 0), int(usage.get("completion_tokens") or 0)
+
+
+def _system_prompt(agent_name: str, model: str, params: dict) -> str:
+    task_type = params.get("task_type", "lost_at_sea")
+    task = _TASK_PROMPTS.get(task_type, _TASK_PROMPTS["custom"])
+    custom = (params.get("custom_prompt") or "").strip()
+    per_model = (params.get("llm_tasks") or {}).get(model, "")
+    teammates = ", ".join(params.get("agent_names") or [])
+    parts = [
+        f"You are {agent_name} on a multi-agent research team.",
+        f"Teammates: {teammates}." if teammates else "",
+        f"Team structure: {params.get('team_structure', 'sequential')}.",
+        f"Task: {task}",
+    ]
+    if custom:
+        parts.append(f"Researcher task prompt: {custom}")
+    if per_model:
+        parts.append(f"Your model-specific instructions: {per_model}")
+    parts.append(
+        "Reply as one conversational team turn: 2–5 sentences. Do not prefix your name. "
+        "Engage teammates by name when useful. Advance the discussion rather than repeating it."
+    )
+    return "\n".join(p for p in parts if p)
+
+
+def _history_to_messages(history: list[dict], agent_name: str) -> list[dict]:
+    messages = []
+    for turn in history[-24:]:
+        text = (turn.get("text") or "").strip()
+        if not text:
+            continue
+        speaker = turn.get("agent") or "Unknown"
+        is_self = speaker == agent_name
+        is_human = speaker == "Human" or turn.get("actor_type") == "human"
+        if is_self:
+            messages.append({"role": "assistant", "content": text})
+        elif is_human:
+            messages.append({"role": "user", "content": f"[Human participant] {text}"})
+        else:
+            messages.append({"role": "user", "content": f"[{speaker}] {text}"})
+    return messages
+
+
+async def _call_kimi(model: str, messages: list[dict], params: dict) -> tuple[str, int, int]:
+    api_key = _api_key(params)
+    if not api_key:
+        raise RuntimeError(
+            "Kimi K2.5 requires an API key. Paste the UVA RC GenAI key in the form "
+            "or set UVARC_GenAI_API in .env."
+        )
+    client = await _client()
+    attempts = []
+    payload = {"model": "Kimi K2.5", "messages": messages}
+    for base_url, model_id in _kimi_endpoints(api_key):
+        payload["model"] = model_id
+        url = f"{base_url}/chat/completions"
+        for label, headers in _header_variants(api_key):
+            try:
+                response = await client.post(url, headers=headers, json=payload)
+            except (httpx.ConnectError, httpx.ConnectTimeout, httpx.TimeoutException) as exc:
+                attempts.append(f"{label} {url} -> connection error: {exc}")
+                continue
+            attempts.append(f"{label} {url} -> {_short_body(response)}")
+            if response.status_code < 400:
+                return _parse_completion(response)
+    trail = " | ".join(attempts) if attempts else "no endpoints reached"
+    raise RuntimeError(
+        "UVA's web gateway blocked the request before Kimi ran. "
+        "A 401 HTML page means campus network policy, not a bad form. "
+        "Connect to UVA Anywhere VPN. ITS also says API calls should run from a Rivanna/Afton compute node. "
+        f"Details: {trail}"
+    )
+
+
+async def agent_turn(agent_name: str, turn_number: int, history: list[dict], params: dict) -> dict:
+    """Produce one agent turn — live Kimi K2.5 or mock."""
+    assigned_model = _assigned_model(agent_name, params)
+    start = time.time()
+
+    if assigned_model in KIMI_MODELS:
+        messages = [{"role": "system", "content": _system_prompt(agent_name, assigned_model, params)}]
+        messages.extend(_history_to_messages(history, agent_name))
+        if not any(m["role"] == "user" for m in messages):
+            messages.append({
+                "role": "user",
+                "content": f"It is round {turn_number + 1}. Make your opening contribution to the team discussion.",
+            })
+        else:
+            messages.append({
+                "role": "user",
+                "content": f"It is round {turn_number + 1}. Continue the discussion as {agent_name}.",
+            })
+        text, input_tokens, output_tokens = await _call_kimi(assigned_model, messages, params)
+        return {
+            "agent": agent_name,
+            "turn": turn_number,
+            "round": turn_number,
+            "text": text,
+            "model": assigned_model,
+            "input_tokens": input_tokens,
+            "output_tokens": output_tokens,
+            "latency_ms": round((time.time() - start) * 1000),
+        }
+
+    await asyncio.sleep(random.uniform(0.15, 0.45))
     seed = params.get("rng_seed")
     if seed is None:
         rng = random.Random()
@@ -110,23 +356,9 @@ async def agent_turn(agent_name: str, turn_number: int, history: list[dict], par
     agent_names = params.get("agent_names") or [agent_name]
     others = [a for a in agent_names if a != agent_name]
     other = rng.choice(others) if others else agent_name
-
-    # Pick task-appropriate lines
     task_type = params.get("task_type", "lost_at_sea")
     lines = _TASK_LINES.get(task_type, _GENERIC_LINES)
     text = rng.choice(lines).format(opt=rng.choice(["A", "B", "C"]), other=other)
-
-    # Determine assigned LLM model
-    models = params.get("selected_models") or [params.get("provider_model", "mock")]
-    try:
-        agent_idx = int(agent_name.split("_")[-1]) - 1 if "_" in agent_name else 0
-    except ValueError:
-        agent_idx = 0
-    assigned_model = models[agent_idx % len(models)]
-
-    # Simulate token counts
-    input_tokens = rng.randint(180, 650)
-    output_tokens = rng.randint(40, 180)
 
     return {
         "agent": agent_name,
@@ -134,28 +366,43 @@ async def agent_turn(agent_name: str, turn_number: int, history: list[dict], par
         "round": turn_number,
         "text": text,
         "model": assigned_model,
-        "input_tokens": input_tokens,
-        "output_tokens": output_tokens,
-        "latency_ms": elapsed_ms,
+        "input_tokens": rng.randint(180, 650),
+        "output_tokens": rng.randint(40, 180),
+        "latency_ms": round((time.time() - start) * 1000),
     }
 
 
 async def answer_human_question(agent_name: str, question: str, history: list[dict], params: dict) -> dict:
-    """Mock direct response to a human question."""
+    """Respond to a direct human question — live Kimi K2.5 or mock."""
+    assigned_model = _assigned_model(agent_name, params)
+    if assigned_model in KIMI_MODELS:
+        messages = [{"role": "system", "content": _system_prompt(agent_name, assigned_model, params)}]
+        messages.extend(_history_to_messages(history, agent_name))
+        messages.append({"role": "user", "content": f"[Human participant asked you directly] {question}"})
+        text, input_tokens, output_tokens = await _call_kimi(assigned_model, messages, params)
+        return {
+            "agent": agent_name,
+            "turn": -1,
+            "text": text,
+            "model": assigned_model,
+            "input_tokens": input_tokens,
+            "output_tokens": output_tokens,
+        }
+
     await asyncio.sleep(random.uniform(0.15, 0.35))
     task_type = params.get("task_type", "lost_at_sea")
     responses = {
-        "lost_at_sea": f"That's a great question. Based on our survival analysis, I believe the key factor is signal visibility. The items that maximize our chance of rescue should be prioritized.",
-        "hiring": f"Thank you for asking. Considering the role requirements and both candidates' profiles, I'd emphasize the alignment between the candidate's track record and our strategic goals.",
-        "desert_survival": f"Good question. In desert conditions, the primary threats are dehydration and heat exposure. Our rankings should reflect time-to-death for each risk factor.",
-        "ethical_dilemma": f"That's a nuanced point. I think we need to weigh the immediate consequences against the long-term precedent this sets for similar situations.",
+        "lost_at_sea": "That's a great question. Based on our survival analysis, I believe the key factor is signal visibility. The items that maximize our chance of rescue should be prioritized.",
+        "hiring": "Thank you for asking. Considering the role requirements and both candidates' profiles, I'd emphasize the alignment between the candidate's track record and our strategic goals.",
+        "desert_survival": "Good question. In desert conditions, the primary threats are dehydration and heat exposure. Our rankings should reflect time-to-death for each risk factor.",
+        "ethical_dilemma": "That's a nuanced point. I think we need to weigh the immediate consequences against the long-term precedent this sets for similar situations.",
     }
-    text = responses.get(task_type, f"Thank you for the input. Let me integrate your question into our analysis and provide a more thorough response.")
+    text = responses.get(task_type, "Thank you for the input. Let me integrate your question into our analysis and provide a more thorough response.")
     return {
         "agent": agent_name,
         "turn": -1,
         "text": text,
-        "model": params.get("provider_model", "mock"),
+        "model": assigned_model,
     }
 
 

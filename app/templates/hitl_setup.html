@@ -28,6 +28,7 @@
       <div id="singleLlmGroup">
         <label>Provider Model
           <select id="modelName">
+            <option value="kimi-k2.5">Kimi K2.5 (UVA RC GenAI)</option>
             <option value="gpt-4o">OpenAI GPT-4o</option>
             <option value="gpt-4-turbo">OpenAI GPT-4 Turbo</option>
             <option value="gpt-3.5-turbo">OpenAI GPT-3.5 Turbo</option>
@@ -38,8 +39,8 @@
             <option value="mock" selected>Mock Backend (Fast Testing)</option>
           </select>
         </label>
-        <label>API Key <span class="hint">(leave blank for Mock)</span>
-          <input type="password" id="apiKey" placeholder="sk-...">
+        <label>API Key <span class="hint">(UVA RC GenAI / ITS key; leave blank to use UVARC_GenAI_API from .env)</span>
+          <input type="password" id="apiKey" placeholder="UVA RC GenAI API key">
         </label>
       </div>
 
@@ -48,6 +49,9 @@
         <label style="font-weight:600; margin-bottom:0.25rem;">Select Models for Your Team:</label>
         <p class="hint" style="margin:0 0 0.75rem;">Check all the LLMs you want agents to use. A separate custom prompt will appear for each.</p>
         <div class="checkbox-grid">
+          <label class="checkbox-item">
+            <input type="checkbox" class="llm-checkbox" value="kimi-k2.5"> Kimi K2.5 (UVA RC GenAI)
+          </label>
           <label class="checkbox-item">
             <input type="checkbox" class="llm-checkbox" value="gpt-4o"> OpenAI GPT-4o
           </label>
@@ -73,8 +77,8 @@
             <input type="checkbox" class="llm-checkbox" value="mock"> Mock Backend
           </label>
         </div>
-        <label class="mt-4">API Key <span class="hint">(shared across providers)</span>
-          <input type="password" id="multiApiKey" placeholder="sk-...">
+        <label class="mt-4">API Key <span class="hint">(shared; leave blank to use UVARC_GenAI_API from .env)</span>
+          <input type="password" id="multiApiKey" placeholder="UVA RC GenAI API key">
         </label>
       </div>
 

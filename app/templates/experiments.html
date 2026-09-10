@@ -59,6 +59,7 @@
     lost_at_sea: 'Lost at Sea', hiring: 'Hiring Decision', desert_survival: 'Desert Survival',
     moon_landing: 'Moon Landing', ethical_dilemma: 'Ethical Dilemma', custom: 'Custom'
   };
+  const modelLabels = { 'kimi-k2.5': 'Kimi K2.5 (UVA)', mock: 'Mock Backend' };
 
   experiments.forEach(exp => {
     const tr = document.createElement('tr');
@@ -66,7 +67,7 @@
     const typeBadge = exp.type === 'HITL'
       ? '<span style="background:var(--accent); color:white; padding:2px 8px; border-radius:8px; font-size:0.75rem; font-weight:600;">HITL</span>'
       : '<span style="background:var(--primary); color:white; padding:2px 8px; border-radius:8px; font-size:0.75rem; font-weight:600;">Pure AI</span>';
-    const models = (exp.models || []).join(', ') || exp.provider_model || 'mock';
+    const models = (exp.models || []).map(m => modelLabels[m] || m).join(', ') || modelLabels[exp.provider_model] || exp.provider_model || 'mock';
     const statusCls = statusClasses[exp.status] || 'running';
     const actions = exp.type === 'HITL'
       ? `<a href="/participant/${exp.id}" class="button secondary" style="font-size:0.8rem; padding:0.35rem 0.75rem;">Open Session</a>`
