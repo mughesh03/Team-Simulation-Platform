@@ -5,29 +5,86 @@
 {% block content %}
 <div class="flex-between mt-4">
   <h1>Experiment History</h1>
-  <a href="/" class="button">Create New Experiment</a>
+  <a href="/" class="button">+ New Experiment</a>
 </div>
 
-<div class="card mt-8">
-  <table style="width: 100%; text-align: left; border-collapse: collapse;">
+<div id="loadingMsg" class="card mt-8 text-center" style="padding:3rem; color:var(--text-secondary);">
+  Loading experiments…
+</div>
+
+<div id="emptyMsg" class="card mt-8 text-center" style="display:none; padding:3rem;">
+  <h3 style="color:var(--text-secondary);">No Experiments Yet</h3>
+  <p>Run a Pure AI batch or create an HITL session to see results here.</p>
+  <a href="/" class="button mt-4">Create Your First Experiment</a>
+</div>
+
+<div class="card mt-8" id="tableCard" style="display:none;">
+  <table style="width:100%; text-align:left; border-collapse:collapse;">
     <thead>
-      <tr style="border-bottom: 1px solid var(--card-border); color: var(--text-secondary);">
-        <th style="padding: 1rem 0;">Type</th>
-        <th style="padding: 1rem 0;">Date</th>
-        <th style="padding: 1rem 0;">Configuration</th>
-        <th style="padding: 1rem 0;">Status</th>
-        <th style="padding: 1rem 0; text-align: right;">Actions</th>
+      <tr style="border-bottom:2px solid var(--card-border); color:var(--text-secondary); font-size:0.85rem;">
+        <th style="padding:0.75rem 0;">Type</th>
+        <th style="padding:0.75rem 0;">Task</th>
+        <th style="padding:0.75rem 0;">Agents</th>
+        <th style="padding:0.75rem 0;">Structure</th>
+        <th style="padding:0.75rem 0;">Models</th>
+        <th style="padding:0.75rem 0;">Status</th>
+        <th style="padding:0.75rem 0; text-align:right;">Actions</th>
       </tr>
     </thead>
-    <tbody id="experimentTableBody">
-      <!-- Populated by JS -->
-    </tbody>
+    <tbody id="experimentTableBody"></tbody>
   </table>
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-  // Will fetch from /api/experiments and populate table
+(async function() {
+  const res = await fetch('/api/experiments');
+  const data = await res.json();
+  const tbody = document.getElementById('experimentTableBody');
+  const loading = document.getElementById('loadingMsg');
+  const empty = document.getElementById('emptyMsg');
+  const table = document.getElementById('tableCard');
+  loading.style.display = 'none';
+
+  const experiments = data.experiments || [];
+  if (experiments.length === 0) {
+    empty.style.display = 'block';
+    return;
+  }
+  table.style.display = 'block';
+
+  const statusClasses = { done: 'completed', running: 'running', active: 'running', completed: 'completed', error: 'paused' };
+  const taskLabels = {
+    lost_at_sea: 'Lost at Sea', hiring: 'Hiring Decision', desert_survival: 'Desert Survival',
+    moon_landing: 'Moon Landing', ethical_dilemma: 'Ethical Dilemma', custom: 'Custom'
+  };
+
+  experiments.forEach(exp => {
+    const tr = document.createElement('tr');
+    tr.style = 'border-bottom:1px solid var(--card-border);';
+    const typeBadge = exp.type === 'HITL'
+      ? '<span style="background:var(--accent); color:white; padding:2px 8px; border-radius:8px; font-size:0.75rem; font-weight:600;">HITL</span>'
+      : '<span style="background:var(--primary); color:white; padding:2px 8px; border-radius:8px; font-size:0.75rem; font-weight:600;">Pure AI</span>';
+    const models = (exp.models || []).join(', ') || exp.provider_model || 'mock';
+    const statusCls = statusClasses[exp.status] || 'running';
+    const actions = exp.type === 'HITL'
+      ? `<a href="/participant/${exp.id}" class="button secondary" style="font-size:0.8rem; padding:0.35rem 0.75rem;">Open Session</a>`
+      : (exp.status === 'done'
+        ? `<a href="/experiment/${exp.id}/dashboard" class="button" style="font-size:0.8rem; padding:0.35rem 0.75rem;">Dashboard</a>`
+        : `<span class="status ${statusCls}" style="font-size:0.7rem;">${exp.completed}/${exp.total}</span>`);
+
+    tr.innerHTML = `
+      <td style="padding:0.75rem 0;">${typeBadge}</td>
+      <td style="padding:0.75rem 0;">${taskLabels[exp.task_type] || exp.task_type}${exp.label ? '<br><span class="hint">'+exp.label+'</span>' : ''}</td>
+      <td style="padding:0.75rem 0;">${exp.num_agents}</td>
+      <td style="padding:0.75rem 0; text-transform:capitalize;">${exp.team_structure}</td>
+      <td style="padding:0.75rem 0; font-size:0.85rem;">${models}</td>
+      <td style="padding:0.75rem 0;"><span class="status ${statusCls}">${exp.status}</span></td>
+      <td style="padding:0.75rem 0; text-align:right;">${actions}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+})();
 </script>
 {% endblock %}

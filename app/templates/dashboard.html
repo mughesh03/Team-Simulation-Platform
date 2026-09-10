@@ -8,87 +8,190 @@
 <div class="flex-between mt-4">
   <div>
     <h1>Experiment Dashboard</h1>
-    <p style="margin:0; font-family: monospace;">ID: {{ experiment_id }}</p>
+    <p style="margin:0; font-family:'JetBrains Mono',monospace; font-size:0.85rem; color:var(--text-secondary);">ID: {{ experiment_id }}</p>
   </div>
-  <div class="flex-between gap-2">
-    <a href="/api/experiment/{{ experiment_id }}/download" class="button secondary">Download Data (ZIP)</a>
-    <a href="/experiment/{{ experiment_id }}/runs" class="button">View Individual Runs</a>
-  </div>
-</div>
-
-<div class="grid-2 mt-8">
-  <!-- Performance -->
-  <div class="card">
-    <h2 style="color: var(--primary);">Performance</h2>
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 2rem;">
-      <div style="background: rgba(0,0,0,0.2); padding: 1rem; border-radius: var(--radius-sm); text-align: center;">
-        <div style="font-size: 2rem; font-weight: 700; color: white;" id="meanScore">--</div>
-        <div style="font-size: 0.85rem; color: var(--text-secondary);">Mean Score</div>
-      </div>
-      <div style="background: rgba(0,0,0,0.2); padding: 1rem; border-radius: var(--radius-sm); text-align: center;">
-        <div style="font-size: 2rem; font-weight: 700; color: white;" id="medianScore">--</div>
-        <div style="font-size: 0.85rem; color: var(--text-secondary);">Median Score</div>
-      </div>
-    </div>
-    
-    <div>
-      <div class="flex-between mb-2">
-        <span style="font-size: 0.85rem;">Std Dev: <strong id="stdDev">--</strong></span>
-        <span style="font-size: 0.85rem;">Range: <strong id="scoreRange">--</strong></span>
-      </div>
-      
-      <h3 style="font-size: 1rem; margin-top: 1.5rem; margin-bottom: 0.5rem;">Score Distribution</h3>
-      <div id="distributionChart" style="height: 150px; display: flex; align-items: flex-end; gap: 4px; border-bottom: 1px solid var(--card-border);">
-        <!-- Bar chart rendered by JS -->
-      </div>
-    </div>
-  </div>
-
-  <div style="display: flex; flex-direction: column; gap: 2rem;">
-    <!-- Efficiency -->
-    <div class="card">
-      <h2 style="color: var(--accent);">Efficiency & Usage</h2>
-      
-      <div class="bar-row">
-        <span class="bar-label" style="width: 120px;">Input Tokens</span>
-        <div class="bar-track"><div class="bar-fill" id="inputFill" style="width: 0%; background: var(--accent);"></div></div>
-        <span class="bar-value" id="inputTokens" style="width: 80px;">--</span>
-      </div>
-      <div class="bar-row">
-        <span class="bar-label" style="width: 120px;">Output Tokens</span>
-        <div class="bar-track"><div class="bar-fill" id="outputFill" style="width: 0%; background: var(--accent);"></div></div>
-        <span class="bar-value" id="outputTokens" style="width: 80px;">--</span>
-      </div>
-      <div class="bar-row">
-        <span class="bar-label" style="width: 120px; font-weight: bold; color: white;">Total Tokens</span>
-        <div class="bar-track" style="background: transparent;"></div>
-        <span class="bar-value" id="totalTokens" style="width: 80px; font-weight: bold; color: white;">--</span>
-      </div>
-      
-      <hr style="border-color: rgba(255,255,255,0.05); margin: 1rem 0;">
-      
-      <div class="flex-between">
-        <span style="color: var(--text-secondary);">Avg. Conversation Turns</span>
-        <strong style="color: white; font-size: 1.2rem;" id="avgTurns">--</strong>
-      </div>
-      <div class="flex-between mt-2">
-        <span style="color: var(--text-secondary);">Avg. Run Duration</span>
-        <strong style="color: white; font-size: 1.2rem;" id="avgDuration">--</strong>
-      </div>
-    </div>
-
-    <!-- Reliability -->
-    <div class="card">
-      <h2>Reliability</h2>
-      <div class="flex-between">
-        <span style="color: var(--text-secondary);">Completed Runs</span>
-        <strong style="color: var(--success); font-size: 1.2rem;" id="completedRuns">--</strong>
-      </div>
-      <div class="flex-between mt-2">
-        <span style="color: var(--text-secondary);">Failed/Errors</span>
-        <strong style="color: var(--danger); font-size: 1.2rem;" id="failedRuns">--</strong>
-      </div>
-    </div>
+  <div style="display:flex; gap:0.5rem;">
+    <a href="/api/experiment/{{ experiment_id }}/download" class="button secondary">⬇ Download JSON</a>
+    <a href="/experiment/{{ experiment_id }}/runs" class="button">📋 View Runs</a>
   </div>
 </div>
+
+<div id="loadingDash" class="card mt-8 text-center" style="padding:3rem; color:var(--text-secondary);">
+  Loading dashboard data…
+</div>
+
+<div id="dashContent" style="display:none;">
+  <!-- Config Summary -->
+  <div class="card mt-4" id="configBar" style="background:rgba(35,45,75,0.03); border-color:var(--primary);">
+    <div style="display:flex; flex-wrap:wrap; gap:2rem; font-size:0.9rem;" id="configSummary"></div>
+  </div>
+
+  <div class="grid-2 mt-4">
+    <!-- Performance -->
+    <div class="card">
+      <h2 style="color:var(--primary);">Performance</h2>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:2rem;">
+        <div class="stat-box">
+          <div class="stat-value" id="meanScore">--</div>
+          <div class="stat-label">Mean Agreement Score</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-value" id="medianScore">--</div>
+          <div class="stat-label">Median Score</div>
+        </div>
+      </div>
+      <div class="flex-between" style="font-size:0.9rem;">
+        <span>Std Dev: <strong id="stdDev">--</strong></span>
+        <span>Range: <strong id="scoreRange">--</strong></span>
+      </div>
+
+      <h3 style="font-size:1rem; margin-top:1.5rem; margin-bottom:0.75rem;">Score Distribution</h3>
+      <div id="distributionChart" style="height:140px; display:flex; align-items:flex-end; gap:3px; border-bottom:1px solid var(--card-border); padding-bottom:2px;"></div>
+      <div style="display:flex; justify-content:space-between; font-size:0.7rem; color:var(--text-secondary); margin-top:4px;">
+        <span>0.0</span><span>0.5</span><span>1.0</span>
+      </div>
+    </div>
+
+    <div style="display:flex; flex-direction:column; gap:1.5rem;">
+      <!-- Token Usage -->
+      <div class="card">
+        <h2 style="color:var(--accent);">Token Usage</h2>
+        <div class="bar-row">
+          <span class="bar-label" style="width:120px;">Input Tokens</span>
+          <div class="bar-track"><div class="bar-fill" id="inputFill" style="width:0%; background:var(--accent);"></div></div>
+          <span class="bar-value" id="inputTokens" style="width:80px;">--</span>
+        </div>
+        <div class="bar-row">
+          <span class="bar-label" style="width:120px;">Output Tokens</span>
+          <div class="bar-track"><div class="bar-fill" id="outputFill" style="width:0%; background:var(--primary);"></div></div>
+          <span class="bar-value" id="outputTokens" style="width:80px;">--</span>
+        </div>
+        <div class="bar-row">
+          <span class="bar-label" style="width:120px; font-weight:bold; color:var(--primary);">Total</span>
+          <div class="bar-track" style="background:transparent;"></div>
+          <span class="bar-value" id="totalTokens" style="width:80px; font-weight:bold; color:var(--primary);">--</span>
+        </div>
+        <hr style="border-color:var(--card-border); margin:1rem 0;">
+        <div class="flex-between">
+          <span class="hint">Avg. Turns / Simulation</span>
+          <strong style="color:var(--primary); font-size:1.1rem;" id="avgTurns">--</strong>
+        </div>
+        <div class="flex-between mt-2">
+          <span class="hint">Avg. Latency</span>
+          <strong style="color:var(--primary); font-size:1.1rem;" id="avgLatency">--</strong>
+        </div>
+      </div>
+
+      <!-- Reliability -->
+      <div class="card">
+        <h2>Reliability</h2>
+        <div class="flex-between">
+          <span class="hint">Completed Runs</span>
+          <strong style="color:var(--success); font-size:1.2rem;" id="completedRuns">--</strong>
+        </div>
+        <div class="flex-between mt-2">
+          <span class="hint">Failed / Errors</span>
+          <strong style="color:var(--danger); font-size:1.2rem;" id="failedRuns">--</strong>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Per-run table -->
+  <div class="card mt-4">
+    <h2>Individual Runs</h2>
+    <div style="max-height:350px; overflow-y:auto;">
+      <table style="width:100%; text-align:left; border-collapse:collapse; font-size:0.9rem;">
+        <thead>
+          <tr style="border-bottom:2px solid var(--card-border); color:var(--text-secondary); position:sticky; top:0; background:var(--card-bg);">
+            <th style="padding:0.5rem 0;">Run #</th>
+            <th style="padding:0.5rem 0;">Score</th>
+            <th style="padding:0.5rem 0;">Turns</th>
+            <th style="padding:0.5rem 0;">Tokens</th>
+            <th style="padding:0.5rem 0; text-align:right;">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="runsTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(async function() {
+  const expId = '{{ experiment_id }}';
+  const res = await fetch(`/api/experiment/${expId}/dashboard`);
+  const d = await res.json();
+  document.getElementById('loadingDash').style.display = 'none';
+
+  if (d.error) {
+    document.getElementById('loadingDash').style.display = 'block';
+    document.getElementById('loadingDash').innerText = d.error === 'not ready' ? 'Experiment still running… refresh soon.' : d.error;
+    return;
+  }
+
+  document.getElementById('dashContent').style.display = 'block';
+
+  // Config summary
+  const cfg = d.config || {};
+  const items = [
+    ['Task', cfg.task_type || '—'],
+    ['Agents', cfg.num_agents || '—'],
+    ['Rounds', cfg.num_rounds || '—'],
+    ['Structure', cfg.team_structure || '—'],
+    ['Simulations', cfg.num_simulations || '—'],
+    ['Models', (cfg.selected_models || []).join(', ') || cfg.provider_model || 'mock'],
+  ];
+  document.getElementById('configSummary').innerHTML = items.map(([k,v]) =>
+    `<div><strong style="color:var(--text-secondary); display:block; font-size:0.8rem;">${k}</strong> <span style="color:var(--primary); text-transform:capitalize;">${v}</span></div>`
+  ).join('');
+
+  // Stats
+  document.getElementById('meanScore').innerText = d.mean_score;
+  document.getElementById('medianScore').innerText = d.median_score;
+  document.getElementById('stdDev').innerText = d.std_dev;
+  document.getElementById('scoreRange').innerText = `${d.min_score} – ${d.max_score}`;
+  document.getElementById('completedRuns').innerText = `${d.num_completed} / ${d.num_completed + d.num_failed}`;
+  document.getElementById('failedRuns').innerText = d.num_failed;
+  document.getElementById('avgTurns').innerText = d.avg_turns;
+  document.getElementById('avgLatency').innerText = `${d.avg_latency_ms} ms`;
+
+  // Tokens
+  const maxTok = Math.max(d.total_input_tokens, d.total_output_tokens, 1);
+  document.getElementById('inputTokens').innerText = d.total_input_tokens.toLocaleString();
+  document.getElementById('outputTokens').innerText = d.total_output_tokens.toLocaleString();
+  document.getElementById('totalTokens').innerText = d.total_tokens.toLocaleString();
+  document.getElementById('inputFill').style.width = `${(d.total_input_tokens/maxTok)*100}%`;
+  document.getElementById('outputFill').style.width = `${(d.total_output_tokens/maxTok)*100}%`;
+
+  // Distribution chart
+  const hist = d.score_histogram || [];
+  const maxBucket = Math.max(...hist, 1);
+  const chart = document.getElementById('distributionChart');
+  hist.forEach((count, i) => {
+    const bar = document.createElement('div');
+    const pct = (count / maxBucket) * 100;
+    bar.style = `flex:1; background:var(--primary); border-radius:3px 3px 0 0; min-height:2px; height:${pct}%; transition:height 0.4s; opacity:${0.5 + (count/maxBucket)*0.5};`;
+    bar.title = `${(i/10).toFixed(1)}–${((i+1)/10).toFixed(1)}: ${count} runs`;
+    chart.appendChild(bar);
+  });
+
+  // Runs table
+  const tbody = document.getElementById('runsTableBody');
+  (d.runs || []).forEach(run => {
+    const tr = document.createElement('tr');
+    tr.style = 'border-bottom:1px solid var(--card-border);';
+    tr.innerHTML = `
+      <td style="padding:0.5rem 0;">Sim #${run.sim_id}</td>
+      <td style="padding:0.5rem 0;"><strong style="color:${run.score > 0.6 ? 'var(--success)' : 'var(--accent)'};">${(run.score || 0).toFixed(3)}</strong></td>
+      <td style="padding:0.5rem 0;">${run.num_turns}</td>
+      <td style="padding:0.5rem 0;">${(run.total_tokens || 0).toLocaleString()}</td>
+      <td style="padding:0.5rem 0; text-align:right;"><a href="/experiment/${expId}/runs?sim=${run.sim_id}" class="button secondary" style="font-size:0.75rem; padding:0.25rem 0.6rem;">View Transcript</a></td>
+    `;
+    tbody.appendChild(tr);
+  });
+})();
+</script>
 {% endblock %}

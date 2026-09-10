@@ -5,53 +5,127 @@
 {% block content %}
 <nav class="mt-4"><a href="/">← Back to Selection</a></nav>
 <h1>Pure AI Team Configuration</h1>
-<p>Configure and launch a batch of AI-only team simulations.</p>
+<p>Configure and launch a batch of AI-only team simulations for your research study.</p>
 
 <form id="pureAiForm" class="mt-8">
   <div class="grid-2">
-    <!-- LLM Configuration -->
+
+    <!-- ==================== 1. LLM Configuration ==================== -->
     <div class="card">
       <h2>1. LLM Configuration</h2>
-      <label>Provider Model
-        <select id="modelName">
-          <option value="gpt-4-turbo">OpenAI GPT-4 Turbo</option>
-          <option value="gpt-3.5-turbo">OpenAI GPT-3.5</option>
-          <option value="claude-3-opus">Anthropic Claude 3 Opus</option>
-          <option value="mock" selected>Mock Backend (Fast Testing)</option>
-        </select>
-      </label>
-      <label>API Key (Optional for Mock)
-        <input type="password" id="apiKey" placeholder="sk-...">
-      </label>
-      <label>Temperature (<span id="tempVal">0.7</span>)
+
+      <!-- Multi-LLM toggle -->
+      <div class="toggle-banner" id="multiLlmBanner">
+        <label class="toggle-label">
+          <input type="checkbox" id="multiLlmToggle">
+          <span class="toggle-switch"></span>
+          <span><strong>Enable Multi-LLM Team</strong></span>
+        </label>
+        <span class="toggle-hint">Assign different models to different agents</span>
+      </div>
+
+      <!-- Single-LLM mode -->
+      <div id="singleLlmGroup">
+        <label>Provider Model
+          <select id="modelName">
+            <option value="gpt-4o">OpenAI GPT-4o</option>
+            <option value="gpt-4-turbo">OpenAI GPT-4 Turbo</option>
+            <option value="gpt-3.5-turbo">OpenAI GPT-3.5 Turbo</option>
+            <option value="claude-3.5-sonnet">Anthropic Claude 3.5 Sonnet</option>
+            <option value="claude-3-opus">Anthropic Claude 3 Opus</option>
+            <option value="gemini-2.5-pro">Google Gemini 2.5 Pro</option>
+            <option value="llama-3.1-70b">Meta Llama 3.1 70B</option>
+            <option value="mock" selected>Mock Backend (Fast Testing)</option>
+          </select>
+        </label>
+        <label>API Key <span class="hint">(leave blank for Mock)</span>
+          <input type="password" id="apiKey" placeholder="sk-...">
+        </label>
+      </div>
+
+      <!-- Multi-LLM mode -->
+      <div id="multiLlmGroup" style="display:none;">
+        <label style="font-weight:600; margin-bottom:0.25rem;">Select Models for Your Team:</label>
+        <p class="hint" style="margin:0 0 0.75rem;">Check all the LLMs you want agents to use. A separate custom prompt will appear for each.</p>
+        <div class="checkbox-grid">
+          <label class="checkbox-item">
+            <input type="checkbox" class="llm-checkbox" value="gpt-4o"> OpenAI GPT-4o
+          </label>
+          <label class="checkbox-item">
+            <input type="checkbox" class="llm-checkbox" value="gpt-4-turbo"> OpenAI GPT-4 Turbo
+          </label>
+          <label class="checkbox-item">
+            <input type="checkbox" class="llm-checkbox" value="gpt-3.5-turbo"> OpenAI GPT-3.5 Turbo
+          </label>
+          <label class="checkbox-item">
+            <input type="checkbox" class="llm-checkbox" value="claude-3.5-sonnet"> Claude 3.5 Sonnet
+          </label>
+          <label class="checkbox-item">
+            <input type="checkbox" class="llm-checkbox" value="claude-3-opus"> Claude 3 Opus
+          </label>
+          <label class="checkbox-item">
+            <input type="checkbox" class="llm-checkbox" value="gemini-2.5-pro"> Gemini 2.5 Pro
+          </label>
+          <label class="checkbox-item">
+            <input type="checkbox" class="llm-checkbox" value="llama-3.1-70b"> Llama 3.1 70B
+          </label>
+          <label class="checkbox-item">
+            <input type="checkbox" class="llm-checkbox" value="mock"> Mock Backend
+          </label>
+        </div>
+        <label class="mt-4">API Key <span class="hint">(shared across providers, or leave blank for Mock)</span>
+          <input type="password" id="multiApiKey" placeholder="sk-...">
+        </label>
+      </div>
+
+      <label class="mt-4">Temperature (<span id="tempVal">0.7</span>)
         <input type="range" id="temperature" min="0" max="2" step="0.1" value="0.7" oninput="document.getElementById('tempVal').innerText=this.value">
+      </label>
+      <label>Max Tokens <span class="hint">(0 = model default)</span>
+        <input type="number" id="maxTokens" value="0" min="0" max="128000" placeholder="0 = default">
       </label>
     </div>
 
-    <!-- Task Configuration -->
+    <!-- ==================== 2. Task Configuration ==================== -->
     <div class="card">
       <h2>2. Task Configuration</h2>
-      <label>Select Task
+      <label>Select Base Task
         <select id="taskType">
           <option value="lost_at_sea">Lost at Sea (Scored)</option>
           <option value="hiring">Hiring Decision (Unscored)</option>
+          <option value="desert_survival">Desert Survival (Scored)</option>
+          <option value="moon_landing">Moon Landing (Scored)</option>
+          <option value="ethical_dilemma">Ethical Dilemma (Unscored)</option>
           <option value="custom">Custom Prompt...</option>
         </select>
       </label>
-      <div id="customTaskGroup" style="display:none;">
+
+      <!-- Single-mode custom prompt -->
+      <div id="customTaskGroup" style="display:none;" class="mt-2">
         <label>Custom Task Prompt
-          <textarea id="customPrompt" placeholder="Enter task instructions for the team..."></textarea>
-        </label>
-        <label>Is this task scored?
-          <select id="isScored">
-            <option value="true">Yes</option>
-            <option value="false">No</option>
-          </select>
+          <textarea id="customPrompt" rows="4" placeholder="Enter task instructions for the entire team..."></textarea>
         </label>
       </div>
+
+      <!-- Per-LLM custom prompts (dynamically populated) -->
+      <div id="perLlmTaskSection" style="display:none;" class="mt-4">
+        <div class="section-divider"></div>
+        <h3 class="section-accent-title">📋 Per-Model Custom Prompts</h3>
+        <p class="hint" style="margin-bottom:1rem;">
+          Each selected LLM gets its own dedicated prompt. Define the specific role, task, or behavior for each model below.
+        </p>
+        <div id="perLlmInputsContainer"></div>
+      </div>
+
+      <label class="mt-4">Is this task scored?
+        <select id="isScored">
+          <option value="true">Yes — compare against a ground-truth answer</option>
+          <option value="false">No — qualitative evaluation only</option>
+        </select>
+      </label>
     </div>
 
-    <!-- AI Team Configuration -->
+    <!-- ==================== 3. AI Team Configuration ==================== -->
     <div class="card">
       <h2>3. AI Team Configuration</h2>
       <div class="form-grid">
@@ -59,22 +133,30 @@
           <input type="number" id="numAgents" value="3" min="1" max="12">
         </label>
         <label>Discussion Rounds
-          <input type="number" id="numRounds" value="6" min="1" max="20">
+          <input type="number" id="numRounds" value="6" min="1" max="50">
         </label>
         <label class="full-width">Interdependence Structure
           <select id="teamStructure">
-            <option value="pooled">Pooled (Independent work aggregated at end)</option>
-            <option value="sequential">Sequential (Pass work to next agent)</option>
-            <option value="reciprocal">Reciprocal (Iterative back-and-forth)</option>
-            <option value="team">Team (Simultaneous group discussion)</option>
+            <option value="pooled">Pooled — Independent work, aggregated at the end</option>
+            <option value="sequential">Sequential — Agents pass work to the next in line</option>
+            <option value="reciprocal">Reciprocal — Iterative back-and-forth exchanges</option>
+            <option value="team" selected>Team — Simultaneous group discussion (round-robin)</option>
+          </select>
+        </label>
+        <label class="full-width">Agent Persona Strategy
+          <select id="personaStrategy">
+            <option value="generic">Generic — All agents share the same system prompt</option>
+            <option value="diverse_roles">Diverse Roles — Analyst, Critic, Synthesizer, etc.</option>
+            <option value="personality">Personality Variation — Cautious, Bold, Balanced</option>
+            <option value="custom">Custom — Define personas manually (coming soon)</option>
           </select>
         </label>
       </div>
     </div>
 
-    <!-- Simulation Settings -->
+    <!-- ==================== 4. Simulation Settings ==================== -->
     <div class="card">
-      <h2>4. Simulations</h2>
+      <h2>4. Simulation Settings</h2>
       <div class="form-grid">
         <label>Replications
           <input type="number" id="numSimulations" value="20" min="1" max="1000">
@@ -82,32 +164,39 @@
         <label>Concurrency Limit
           <input type="number" id="concurrency" value="5" min="1" max="50">
         </label>
-        <label class="full-width">Random Seed (Optional)
-          <input type="number" id="seed" placeholder="e.g. 12345">
+        <label>Random Seed <span class="hint">(optional, for reproducibility)</span>
+          <input type="number" id="seed" placeholder="e.g. 42">
+        </label>
+        <label>Experiment Label <span class="hint">(optional)</span>
+          <input type="text" id="experimentLabel" placeholder="e.g. pilot_study_v2">
         </label>
       </div>
+      <label class="full-width mt-4">Researcher Notes <span class="hint">(saved with experiment metadata)</span>
+        <textarea id="researcherNotes" rows="2" placeholder="Internal notes about this experiment run..."></textarea>
+      </label>
     </div>
   </div>
 
-  <div class="card mt-4" style="border-color: var(--primary);">
+  <!-- Launch Bar -->
+  <div class="card mt-4 launch-bar">
     <div class="flex-between">
       <div>
         <h3>Ready to Launch?</h3>
-        <p style="margin:0; font-size: 0.9rem;">Review settings before starting batch execution.</p>
+        <p style="margin:0; font-size:0.9rem;">Review all settings above before starting.</p>
       </div>
-      <button type="submit" id="startBtn" style="padding: 1rem 2rem; font-size: 1.1rem;">Start Experiment</button>
+      <button type="submit" id="startBtn" class="launch-btn">🚀 Start Experiment</button>
     </div>
   </div>
 </form>
 
-<!-- Progress Section (Hidden initially) -->
+<!-- Progress Section -->
 <div class="card mt-8" id="progressCard" style="display:none;">
   <div class="flex-between">
     <h2>Execution Progress</h2>
     <span id="statusBadge" class="status running">Running</span>
   </div>
   <div class="progress-container">
-    <div class="flex-between" style="font-size: 0.9rem; font-weight: 500;">
+    <div class="flex-between" style="font-size:0.9rem; font-weight:500;">
       <span id="progressText">0 / 0 completed</span>
       <span id="progressPercent">0%</span>
     </div>
@@ -124,11 +213,10 @@
 
 {% block scripts %}
 <script>
+  // Task type toggle for custom prompt
   document.getElementById('taskType').addEventListener('change', (e) => {
-    document.getElementById('customTaskGroup').style.display = (e.target.value === 'custom') ? 'block' : 'none';
+    const cg = document.getElementById('customTaskGroup');
+    if (cg) cg.style.display = (e.target.value === 'custom') ? 'block' : 'none';
   });
-  
-  // Note: Form submission logic will be handled by app.js, which we will build shortly.
-  // The backend API for this will be /api/experiment/pure-ai/start
 </script>
 {% endblock %}
