@@ -4,20 +4,54 @@ import asyncio
 import csv
 import io
 import json
+import os
+import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 
-BASE_DIR = Path(__file__).resolve().parent.parent
-DATA_DIR = BASE_DIR / "data"
-SESSIONS_DIR = DATA_DIR / "sessions"
-BATCHES_DIR = DATA_DIR / "batches"
+_DATA_DIR: Path | None = None
 _batch_write_locks: dict[str, asyncio.Lock] = {}
 _session_write_locks: dict[str, asyncio.Lock] = {}
 
 
+def _writable_data_dir() -> Path:
+    preferred = Path(__file__).resolve().parent.parent / "data"
+    candidates = [preferred]
+    if os.getenv("VERCEL") or os.getenv("NOW_REGION"):
+        candidates.insert(0, Path(tempfile.gettempdir()) / "team_sim_data")
+    for path in candidates:
+        try:
+            path.mkdir(parents=True, exist_ok=True)
+            probe = path / ".write_test"
+            probe.write_text("ok", encoding="utf-8")
+            probe.unlink(missing_ok=True)
+            return path
+        except OSError:
+            continue
+    return Path(tempfile.gettempdir()) / "team_sim_data"
+
+
+def DATA_DIR() -> Path:
+    global _DATA_DIR
+    if _DATA_DIR is None:
+        _DATA_DIR = _writable_data_dir()
+    return _DATA_DIR
+
+
+def SESSIONS_DIR() -> Path:
+    return DATA_DIR() / "sessions"
+
+
+def BATCHES_DIR() -> Path:
+    return DATA_DIR() / "batches"
+
+
 def init_storage():
-    SESSIONS_DIR.mkdir(parents=True, exist_ok=True)
-    BATCHES_DIR.mkdir(parents=True, exist_ok=True)
+    try:
+        SESSIONS_DIR().mkdir(parents=True, exist_ok=True)
+        BATCHES_DIR().mkdir(parents=True, exist_ok=True)
+    except OSError:
+        pass
 
 
 def now_iso() -> str:
@@ -33,35 +67,40 @@ def _session_lock(session_id: str) -> asyncio.Lock:
 
 
 def _session_config_path(session_id: str) -> Path:
-    return SESSIONS_DIR / f"{session_id}.config.json"
+    return SESSIONS_DIR() / f"{session_id}.config.json"
 
 
 def _session_log_path(session_id: str) -> Path:
-    return SESSIONS_DIR / f"{session_id}.jsonl"
+    return SESSIONS_DIR() / f"{session_id}.jsonl"
 
 
 def _batch_config_path(job_id: str) -> Path:
-    return BATCHES_DIR / f"{job_id}.config.json"
+    return BATCHES_DIR() / f"{job_id}.config.json"
 
 
 def _batch_log_path(job_id: str) -> Path:
-    return BATCHES_DIR / f"{job_id}.jsonl"
+    return BATCHES_DIR() / f"{job_id}.jsonl"
+
+
+def _safe_write_text(path: Path, text: str):
+    try:
+        init_storage()
+        path.write_text(text, encoding="utf-8")
+    except OSError:
+        pass
 
 
 def save_session_config(session_id: str, config: dict):
-    init_storage()
     payload = {"session_id": session_id, "created_at": now_iso(), **config}
-    _session_config_path(session_id).write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    _safe_write_text(_session_config_path(session_id), json.dumps(payload, indent=2))
 
 
 def save_batch_config(job_id: str, config: dict):
-    init_storage()
     payload = {"job_id": job_id, "created_at": now_iso(), **config}
-    _batch_config_path(job_id).write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    _safe_write_text(_batch_config_path(job_id), json.dumps(payload, indent=2))
 
 
 async def log_session_event(session_id: str, actor: str, event_type: str, content: str = "", metadata: dict | None = None) -> dict:
-    init_storage()
     event = {
         "timestamp": now_iso(),
         "actor": actor,
@@ -69,17 +108,24 @@ async def log_session_event(session_id: str, actor: str, event_type: str, conten
         "content": content,
         "metadata": metadata or {},
     }
-    async with _session_lock(session_id):
-        with _session_log_path(session_id).open("a", encoding="utf-8") as f:
-            f.write(json.dumps(event, ensure_ascii=False) + "\n")
+    try:
+        init_storage()
+        async with _session_lock(session_id):
+            with _session_log_path(session_id).open("a", encoding="utf-8") as f:
+                f.write(json.dumps(event, ensure_ascii=False) + "\n")
+    except OSError:
+        pass
     return event
 
 
 async def log_batch_result(job_id: str, result: dict):
-    init_storage()
-    async with _batch_lock(job_id):
-        with _batch_log_path(job_id).open("a", encoding="utf-8") as f:
-            f.write(json.dumps(result, ensure_ascii=False) + "\n")
+    try:
+        init_storage()
+        async with _batch_lock(job_id):
+            with _batch_log_path(job_id).open("a", encoding="utf-8") as f:
+                f.write(json.dumps(result, ensure_ascii=False) + "\n")
+    except OSError:
+        pass
 
 
 def _read_jsonl(path: Path) -> list[dict]:

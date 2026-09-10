@@ -36,8 +36,13 @@ async function apiCall(endpoint, method = 'GET', payload = null) {
   try {
     const res = await fetch(endpoint, options);
     if (res.status === 401 || res.status === 403) { window.location.href = '/login'; return null; }
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.detail || data.error || 'API Error');
+    const raw = await res.text();
+    let data = {};
+    try { data = raw ? JSON.parse(raw) : {}; }
+    catch {
+      throw new Error(raw ? raw.slice(0, 180) : `Server error (${res.status})`);
+    }
+    if (!res.ok) throw new Error(data.detail || data.error || `API Error (${res.status})`);
     return data;
   } catch (err) {
     console.error('API Call Failed:', err);

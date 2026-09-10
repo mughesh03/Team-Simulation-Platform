@@ -345,7 +345,7 @@ async def agent_turn(agent_name: str, turn_number: int, history: list[dict], par
             "latency_ms": round((time.time() - start) * 1000),
         }
 
-    await asyncio.sleep(random.uniform(0.15, 0.45))
+    await asyncio.sleep(0 if os.getenv("VERCEL") else random.uniform(0.15, 0.45))
     seed = params.get("rng_seed")
     if seed is None:
         rng = random.Random()

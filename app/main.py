@@ -7,6 +7,7 @@ Flow 2: autonomous mock-agent conversation over WebSocket with pause/resume,
 
 import asyncio
 import json
+import os
 import random
 import uuid
 from pathlib import Path
@@ -179,7 +180,12 @@ async def start_batch(payload: Dict[str, Any]):
     total_sims = params_dict.get("num_simulations", 20)
     BATCH_JOBS[job_id] = {"status": "running", "completed": 0, "total": total_sims, "results": None, "config": public_config(params_dict)}
     storage.save_batch_config(job_id, public_config(params_dict))
-    asyncio.create_task(run_batch(job_id, params_dict))
+    # Vercel serverless functions exit after the HTTP response, so finish the
+    # mock batch in this request instead of creating a background task.
+    if os.getenv("VERCEL"):
+        await run_batch(job_id, params_dict)
+    else:
+        asyncio.create_task(run_batch(job_id, params_dict))
     return {"job_id": job_id, "experiment_id": job_id}
 
 
