@@ -93,6 +93,7 @@ _GENERIC_LINES = [
 
 
 KIMI_MODELS = {"kimi-k2.5"}
+DEMO_MODE = os.getenv("USE_LIVE_KIMI", "").strip().lower() not in {"1", "true", "yes"}
 _TASK_PROMPTS = {
     "lost_at_sea": (
         "You are on a team ranking 15 items for survival after a shipwreck in the Atlantic. "
@@ -319,7 +320,7 @@ async def agent_turn(agent_name: str, turn_number: int, history: list[dict], par
     assigned_model = _assigned_model(agent_name, params)
     start = time.time()
 
-    if assigned_model in KIMI_MODELS:
+    if assigned_model in KIMI_MODELS and not DEMO_MODE and _api_key(params):
         messages = [{"role": "system", "content": _system_prompt(agent_name, assigned_model, params)}]
         messages.extend(_history_to_messages(history, agent_name))
         if not any(m["role"] == "user" for m in messages):
@@ -375,7 +376,7 @@ async def agent_turn(agent_name: str, turn_number: int, history: list[dict], par
 async def answer_human_question(agent_name: str, question: str, history: list[dict], params: dict) -> dict:
     """Respond to a direct human question — live Kimi K2.5 or mock."""
     assigned_model = _assigned_model(agent_name, params)
-    if assigned_model in KIMI_MODELS:
+    if assigned_model in KIMI_MODELS and not DEMO_MODE and _api_key(params):
         messages = [{"role": "system", "content": _system_prompt(agent_name, assigned_model, params)}]
         messages.extend(_history_to_messages(history, agent_name))
         messages.append({"role": "user", "content": f"[Human participant asked you directly] {question}"})

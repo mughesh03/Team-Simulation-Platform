@@ -179,12 +179,6 @@ function initPureAiForm() {
     if (btn) btn.disabled = true;
 
     const { llm, task } = collectLlmAndTaskData();
-    const usingKimi = (llm.selected_models || []).includes('kimi-k2.5') || llm.provider_model === 'kimi-k2.5';
-    if (usingKimi && !(llm.api_key || '').trim()) {
-      alert('Paste your UVA RC GenAI / ITS API key before starting a Kimi K2.5 run.');
-      if (btn) btn.disabled = false;
-      return;
-    }
 
     const payload = {
       llm, task,
@@ -254,11 +248,6 @@ function initHitlForm() {
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const { llm, task } = collectLlmAndTaskData();
-    const usingKimi = (llm.selected_models || []).includes('kimi-k2.5') || llm.provider_model === 'kimi-k2.5';
-    if (usingKimi && !(llm.api_key || '').trim()) {
-      alert('Paste your UVA RC GenAI / ITS API key before creating a Kimi K2.5 session.');
-      return;
-    }
 
     const payload = {
       llm, task,
