@@ -82,12 +82,7 @@
         </label>
       </div>
 
-      <label class="mt-4">Temperature (<span id="tempVal">0.7</span>)
-        <input type="range" id="temperature" min="0" max="2" step="0.1" value="0.7" oninput="document.getElementById('tempVal').innerText=this.value">
-      </label>
-      <label>Max Tokens <span class="hint">(0 = model default)</span>
-        <input type="number" id="maxTokens" value="0" min="0" max="128000" placeholder="0 = default">
-      </label>
+
     </div>
 
     <!-- ==================== 2. Task Configuration ==================== -->
@@ -121,7 +116,7 @@
         <div id="perLlmInputsContainer"></div>
       </div>
 
-      <label class="mt-4">Is this task scored?
+      <label class="mt-4" id="isScoredGroup" style="display:none;">Is this task scored?
         <select id="isScored">
           <option value="true">Yes — compare against a ground-truth answer</option>
           <option value="false">No — qualitative evaluation only</option>
@@ -147,14 +142,10 @@
             <option value="team" selected>Team — Simultaneous group discussion (round-robin)</option>
           </select>
         </label>
-        <label class="full-width">Agent Persona Strategy
-          <select id="personaStrategy">
-            <option value="generic">Generic — All agents share the same system prompt</option>
-            <option value="diverse_roles">Diverse Roles — Analyst, Critic, Synthesizer, etc.</option>
-            <option value="personality">Personality Variation — Cautious, Bold, Balanced</option>
-            <option value="custom">Custom — Define personas manually (coming soon)</option>
-          </select>
-        </label>
+        <div id="perAgentConfigContainer" class="full-width mt-4" style="border-top: 1px dashed var(--border); padding-top: 1rem;">
+          <!-- Dynamically populated by JS -->
+        </div>
+
       </div>
     </div>
 
@@ -222,6 +213,8 @@
   document.getElementById('taskType').addEventListener('change', (e) => {
     const cg = document.getElementById('customTaskGroup');
     if (cg) cg.style.display = (e.target.value === 'custom') ? 'block' : 'none';
+    const isg = document.getElementById('isScoredGroup');
+    if (isg) isg.style.display = (e.target.value === 'custom') ? 'block' : 'none';
   });
 </script>
 {% endblock %}

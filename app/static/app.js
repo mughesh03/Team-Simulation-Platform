@@ -169,6 +169,56 @@ function collectLlmAndTaskData() {
   return { llm, task };
 }
 
+function renderPerAgentConfigs() {
+  const container = $('perAgentConfigContainer');
+  if (!container) return;
+  const num = parseInt($('numAgents').value) || 3;
+  let html = '';
+  for (let i = 1; i <= num; i++) {
+    const exDesc = $('agentDesc_' + i) ? $('agentDesc_' + i).value : '';
+    const exStruct = $('agentStruct_' + i) ? $('agentStruct_' + i).value : 'team';
+    html += `
+      <div class="agent-config-block card" style="margin-bottom: 1rem; padding: 1rem; border: 1px solid var(--border);">
+        <h4 style="margin-top: 0; margin-bottom: 0.5rem; font-size: 0.95rem; color: var(--accent);">Agent ${i}</h4>
+        <label style="margin-bottom: 0.5rem;">Role Description / Prompt
+          <textarea id="agentDesc_${i}" rows="2" placeholder="e.g. You are the Leader...">${exDesc}</textarea>
+        </label>
+        <label>Interdependence Structure
+          <select id="agentStruct_${i}">
+            <option value="pooled" ${exStruct==='pooled'?'selected':''}>Pooled</option>
+            <option value="sequential" ${exStruct==='sequential'?'selected':''}>Sequential</option>
+            <option value="reciprocal" ${exStruct==='reciprocal'?'selected':''}>Reciprocal</option>
+            <option value="team" ${exStruct==='team'?'selected':''}>Team</option>
+          </select>
+        </label>
+      </div>
+    `;
+  }
+  container.innerHTML = html;
+}
+
+function initPerAgentConfigs() {
+  const numInput = $('numAgents');
+  if (numInput) {
+    numInput.addEventListener('change', renderPerAgentConfigs);
+    numInput.addEventListener('input', renderPerAgentConfigs);
+    renderPerAgentConfigs();
+  }
+}
+
+function collectAgentConfigs() {
+  const configs = [];
+  const num = parseInt($('numAgents').value) || 3;
+  for (let i = 1; i <= num; i++) {
+    configs.push({
+      agent_id: i,
+      description: $('agentDesc_' + i) ? $('agentDesc_' + i).value : '',
+      structure: $('agentStruct_' + i) ? $('agentStruct_' + i).value : 'team'
+    });
+  }
+  return configs;
+}
+
 
 /* =================================================================
    PURE-AI  FORM  HANDLER
@@ -190,7 +240,8 @@ function initPureAiForm() {
       team: {
         num_agents: parseInt($('numAgents').value),
         num_rounds: parseInt($('numRounds').value),
-        structure:  $('teamStructure').value
+        structure:  $('teamStructure').value,
+        agent_configs: collectAgentConfigs()
       },
       persona_strategy: $('personaStrategy') ? $('personaStrategy').value : 'generic',
       num_simulations:  parseInt($('numSimulations').value),
@@ -259,7 +310,8 @@ function initHitlForm() {
       team: {
         num_agents: parseInt($('numAgents').value),
         num_rounds: parseInt($('numRounds').value),
-        structure:  $('teamStructure').value
+        structure:  $('teamStructure').value,
+        agent_configs: collectAgentConfigs()
       },
       persona_strategy: $('personaStrategy') ? $('personaStrategy').value : 'generic',
       intervention_rules: {
@@ -297,6 +349,7 @@ function initHitlForm() {
 
 document.addEventListener('DOMContentLoaded', () => {
   initMultiLlm();
+  initPerAgentConfigs();
   initPureAiForm();
   initHitlForm();
 });

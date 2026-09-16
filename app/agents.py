@@ -1,7 +1,8 @@
-"""Agent backend — mock responses plus a live Kimi K2.5 path.
+"""Agent backend — mock responses plus live UVA Kimi K2.5 path.
 
 ``agent_turn`` / ``answer_human_question`` keep a stable return shape.
-Kimi K2.5 is called when that model is selected and an API key is present.
+- model == "mock" -> mock lines (demo, always works)
+- model == "kimi-k2.5" -> live UVA RC GenAI Open-WebUI call, hard error if key/network fails.
 """
 
 import asyncio
@@ -12,6 +13,14 @@ import json
 import time
 
 import httpx
+
+try:
+    from . import uva_secrets as _local_secrets
+except ImportError:
+    try:
+        import app.uva_secrets as _local_secrets  # type: ignore
+    except ImportError:
+        _local_secrets = None  # type: ignore
 
 # ── Realistic mock dialogue lines keyed by task ──────────────────
 
@@ -93,7 +102,8 @@ _GENERIC_LINES = [
 
 
 KIMI_MODELS = {"kimi-k2.5"}
-DEMO_MODE = os.getenv("USE_LIVE_KIMI", "").strip().lower() not in {"1", "true", "yes"}
+# Live Kimi is ON. Mock is only used when model == "mock".
+# Previously DEMO_MODE forced mock even for kimi-k2.5; removed per approved plan.
 _TASK_PROMPTS = {
     "lost_at_sea": (
         "You are on a team ranking 15 items for survival after a shipwreck in the Atlantic. "
@@ -136,13 +146,23 @@ def _assigned_model(agent_name: str, params: dict) -> str:
     return models[agent_idx % len(models)]
 
 
+def _local_secret(key: str, default: str = "") -> str:
+    if _local_secrets is not None and hasattr(_local_secrets, key):
+        val = str(getattr(_local_secrets, key) or "").strip()
+        if val and val != "PASTE_YOUR_UVA_KEY_HERE":
+            return val
+    return default
+
+
 def _api_key(params: dict) -> str:
     raw = (
         str(params.get("api_key") or "").strip()
+        or _local_secret("UVARC_GENAI_API")
+        or _local_secret("KIMI_API_KEY")
         or os.getenv("UVARC_GenAI_API", "").strip()
+        or os.getenv("UVA_RC_API_KEY", "").strip()
         or os.getenv("KIMI_API_KEY", "").strip()
         or os.getenv("MOONSHOT_API_KEY", "").strip()
-        or os.getenv("OPENROUTER_API_KEY", "").strip()
     )
     raw = raw.strip().strip('"').strip("'")
     if raw.lower().startswith("bearer "):
@@ -151,11 +171,17 @@ def _api_key(params: dict) -> str:
 
 
 def _kimi_endpoints(api_key: str) -> list[tuple[str, str]]:
-    """UVA RC GenAI Open WebUI chat completions URL."""
-    configured = os.getenv("KIMI_BASE_URL", "").rstrip("/")
-    configured_model = os.getenv("KIMI_MODEL", "Kimi K2.5")
+    """UVA RC GenAI Open WebUI chat completions URL.
+
+    Per https://learning.rc.virginia.edu/notes/uva-rc-genai/usage/api/ :
+    POST {base}/chat/completions with {"model": "Kimi K2.5", "messages": [...]}
+
+    Priority: explicit KIMI_BASE_URL env > app/uva_secrets.py > UVA default.
+    """
+    configured = os.getenv("KIMI_BASE_URL", "").strip().rstrip("/") or _local_secret("KIMI_BASE_URL")
+    configured_model = os.getenv("KIMI_MODEL", "").strip() or _local_secret("KIMI_MODEL", "Kimi K2.5")
     if configured:
-        return [(configured, configured_model)]
+        return [(configured, configured_model or "Kimi K2.5")]
     return [("https://open-webui.rc.virginia.edu/api", "Kimi K2.5")]
 
 
@@ -249,10 +275,24 @@ def _system_prompt(agent_name: str, model: str, params: dict) -> str:
     custom = (params.get("custom_prompt") or "").strip()
     per_model = (params.get("llm_tasks") or {}).get(model, "")
     teammates = ", ".join(params.get("agent_names") or [])
+    
+    # Process per-agent configs
+    agent_configs = params.get("agent_configs") or []
+    my_config = {}
+    try:
+        agent_id = int(agent_name.replace("Agent ", ""))
+        my_config = next((c for c in agent_configs if c["agent_id"] == agent_id), {})
+    except ValueError:
+        pass
+        
+    my_desc = my_config.get("description", "").strip()
+    my_struct = my_config.get("structure", params.get("team_structure", "sequential"))
+
     parts = [
         f"You are {agent_name} on a multi-agent research team.",
         f"Teammates: {teammates}." if teammates else "",
-        f"Team structure: {params.get('team_structure', 'sequential')}.",
+        f"Your personal role/description: {my_desc}" if my_desc else "",
+        f"Interdependence structure: {my_struct}.",
         f"Task: {task}",
     ]
     if custom:
@@ -285,11 +325,13 @@ def _history_to_messages(history: list[dict], agent_name: str) -> list[dict]:
 
 
 async def _call_kimi(model: str, messages: list[dict], params: dict) -> tuple[str, int, int]:
+    """Non-streaming UVA call: POST {base}/chat/completions, parse choices[0].message.content + usage."""
     api_key = _api_key(params)
     if not api_key:
         raise RuntimeError(
-            "Kimi K2.5 requires an API key. Paste the UVA RC GenAI key in the form "
-            "or set UVARC_GenAI_API in .env."
+            "Kimi K2.5 key missing (hard error, no mock fallback). "
+            "Paste your key into app/uva_secrets.py -> UVARC_GENAI_API, "
+            "or set UVARC_GenAI_API env, or paste it in the UI API-key box."
         )
     client = await _client()
     attempts = []
@@ -308,19 +350,19 @@ async def _call_kimi(model: str, messages: list[dict], params: dict) -> tuple[st
                 return _parse_completion(response)
     trail = " | ".join(attempts) if attempts else "no endpoints reached"
     raise RuntimeError(
-        "UVA's web gateway blocked the request before Kimi ran. "
-        "A 401 HTML page means campus network policy, not a bad form. "
-        "Connect to UVA Anywhere VPN. ITS also says API calls should run from a Rivanna/Afton compute node. "
+        "Kimi K2.5 call failed (hard error, no mock fallback). "
+        "If 401 HTML: you are off a Rivanna compute node or key is wrong. "
+        "Run from ijob / Open OnDemand on Rivanna, VPN on, key from open-webui.rc.virginia.edu. "
         f"Details: {trail}"
     )
 
 
 async def agent_turn(agent_name: str, turn_number: int, history: list[dict], params: dict) -> dict:
-    """Produce one agent turn — live Kimi K2.5 or mock."""
+    """Produce one agent turn — live Kimi K2.5 (both flows) or mock."""
     assigned_model = _assigned_model(agent_name, params)
     start = time.time()
 
-    if assigned_model in KIMI_MODELS and not DEMO_MODE and _api_key(params):
+    if assigned_model in KIMI_MODELS:
         messages = [{"role": "system", "content": _system_prompt(agent_name, assigned_model, params)}]
         messages.extend(_history_to_messages(history, agent_name))
         if not any(m["role"] == "user" for m in messages):
@@ -374,9 +416,9 @@ async def agent_turn(agent_name: str, turn_number: int, history: list[dict], par
 
 
 async def answer_human_question(agent_name: str, question: str, history: list[dict], params: dict) -> dict:
-    """Respond to a direct human question — live Kimi K2.5 or mock."""
+    """Respond to a direct human question — live Kimi K2.5 (HITL) or mock."""
     assigned_model = _assigned_model(agent_name, params)
-    if assigned_model in KIMI_MODELS and not DEMO_MODE and _api_key(params):
+    if assigned_model in KIMI_MODELS:
         messages = [{"role": "system", "content": _system_prompt(agent_name, assigned_model, params)}]
         messages.extend(_history_to_messages(history, agent_name))
         messages.append({"role": "user", "content": f"[Human participant asked you directly] {question}"})
