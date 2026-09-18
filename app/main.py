@@ -70,7 +70,7 @@ class SessionParams(ExperimentParams):
 def _agent_order(agent_names: list[str], team_structure: str, round_idx: int) -> list[str]:
     if team_structure in ["parallel", "team"]:
         return agent_names
-    if team_structure in ["hierarchical", "reciprocal"]:
+    if team_structure == "hierarchical":
         if len(agent_names) <= 1:
             return agent_names
         leader = agent_names[0]
@@ -82,6 +82,28 @@ def _agent_order(agent_names: list[str], team_structure: str, round_idx: int) ->
 
 async def _run_round(history: list[dict], agent_names: list[str], params: dict, round_idx: int) -> list[dict]:
     team_structure = params.get("team_structure", "sequential")
+    
+    if team_structure == "reciprocal":
+        mid = len(agent_names) // 2
+        if mid == 0:
+            mid = 1
+        group_a = agent_names[:mid]
+        group_b = agent_names[mid:]
+        
+        snapshot = list(history)
+        
+        async def run_group(group: list[str], group_name: str):
+            results = await asyncio.gather(*[
+                agent_turn(name, round_idx, snapshot, {**params, "agent_names": group})
+                for name in group
+            ])
+            for r in results:
+                r["group"] = group_name
+            return results
+            
+        a_results, b_results = await asyncio.gather(run_group(group_a, "Group A"), run_group(group_b, "Group B"))
+        return a_results + b_results
+
     order = _agent_order(agent_names, team_structure, round_idx)
     if team_structure in ["parallel", "team"]:
         snapshot = list(history)
@@ -140,6 +162,9 @@ async def run_batch(job_id: str, params: dict):
         await asyncio.gather(*(worker(i) for i in range(num_simulations)))
         job["results"] = results
         job["status"] = "done"
+    except asyncio.CancelledError:
+        job["status"] = "stopped"
+        job["error"] = "Experiment stopped by user."
     except Exception as exc:
         job["status"] = "error"
         job["error"] = str(exc)
@@ -186,7 +211,8 @@ async def start_batch(payload: Dict[str, Any]):
     if os.getenv("VERCEL"):
         await run_batch(job_id, params_dict)
     else:
-        asyncio.create_task(run_batch(job_id, params_dict))
+        task = asyncio.create_task(run_batch(job_id, params_dict))
+        BATCH_JOBS[job_id]["task"] = task
     return {"job_id": job_id, "experiment_id": job_id}
 
 
@@ -194,7 +220,34 @@ async def start_batch(payload: Dict[str, Any]):
 @app.get("/api/experiment/{job_id}/status")
 async def batch_status(job_id: str):
     job = BATCH_JOBS.get(job_id)
-    return job if job else {"error": "job not found"}
+    # Don't serialize the asyncio.Task object when returning status
+    if job:
+        safe_job = {k: v for k, v in job.items() if k != "task"}
+        return safe_job
+    return {"error": "job not found"}
+
+@app.post("/api/batch/{job_id}/stop")
+@app.post("/api/experiment/{job_id}/stop")
+async def stop_experiment(job_id: str):
+    job = BATCH_JOBS.get(job_id)
+    if not job:
+        # Check if it's a HITL session
+        session = SESSIONS.get(job_id)
+        if session and session.run_task and not session.run_task.done():
+            session.run_task.cancel()
+            return {"status": "stopped"}
+        return {"error": "job not found"}
+    
+    if job.get("status") not in ("running", "queued"):
+        return {"error": "job not running"}
+    
+    task = job.get("task")
+    if task and not task.done():
+        task.cancel()
+        job["status"] = "stopped"
+        job["error"] = "Experiment stopped by user."
+        return {"status": "stopped"}
+    return {"status": "stopped"}
 
 
 @app.get("/api/batch/{job_id}/results")
@@ -269,7 +322,8 @@ class HumanLoopSession:
             await storage.log_session_event(self.session_id, "system", "SESSION_COMPLETED", "Session completed", summary)
             await self.send({"type": "done", "summary": summary})
         except asyncio.CancelledError:
-            raise
+            await storage.log_session_event(self.session_id, "system", "SESSION_STOPPED", "Session stopped by user")
+            await self.send({"type": "error", "text": "Session stopped by user."})
         except Exception as exc:
             await storage.log_session_event(self.session_id, "system", "SESSION_ERROR", str(exc))
             await self.send({"type": "error", "text": str(exc)})

@@ -173,23 +173,28 @@ function renderPerAgentConfigs() {
   const container = $('perAgentConfigContainer');
   if (!container) return;
   const num = parseInt($('numAgents').value) || 3;
+  const structure = $('teamStructure') ? $('teamStructure').value : 'team';
   let html = '';
+  
+  if (structure === 'reciprocal') {
+    const mid = Math.max(1, Math.floor(num / 2));
+    html += `<div style="margin-bottom:1rem; padding:1rem; background:rgba(229,114,0,0.05); border-radius:var(--radius-md); border:1px solid rgba(229,114,0,0.2);">
+      <h4 style="color:var(--accent); margin-top:0; margin-bottom:0.5rem;">Reciprocal Grouping</h4>
+      <div style="display:flex; gap:2rem; font-size:0.9rem;">
+        <div><strong>Group A:</strong> Agent 1 to Agent ${mid}</div>
+        <div><strong>Group B:</strong> Agent ${mid + 1} to Agent ${num}</div>
+      </div>
+      <p style="margin:0.5rem 0 0 0; font-size:0.85rem; color:var(--text-secondary);">These two groups will discuss the task in parallel independently, and merge messages at the end of each round.</p>
+    </div>`;
+  }
+
   for (let i = 1; i <= num; i++) {
     const exDesc = $('agentDesc_' + i) ? $('agentDesc_' + i).value : '';
-    const exStruct = $('agentStruct_' + i) ? $('agentStruct_' + i).value : 'team';
     html += `
       <div class="agent-config-block card" style="margin-bottom: 1rem; padding: 1rem; border: 1px solid var(--border);">
         <h4 style="margin-top: 0; margin-bottom: 0.5rem; font-size: 0.95rem; color: var(--accent);">Agent ${i}</h4>
         <label style="margin-bottom: 0.5rem;">Role Description / Prompt
           <textarea id="agentDesc_${i}" rows="2" placeholder="e.g. You are the Leader...">${exDesc}</textarea>
-        </label>
-        <label>Interdependence Structure
-          <select id="agentStruct_${i}">
-            <option value="pooled" ${exStruct==='pooled'?'selected':''}>Pooled</option>
-            <option value="sequential" ${exStruct==='sequential'?'selected':''}>Sequential</option>
-            <option value="reciprocal" ${exStruct==='reciprocal'?'selected':''}>Reciprocal</option>
-            <option value="team" ${exStruct==='team'?'selected':''}>Team</option>
-          </select>
         </label>
       </div>
     `;
@@ -202,6 +207,12 @@ function initPerAgentConfigs() {
   if (numInput) {
     numInput.addEventListener('change', renderPerAgentConfigs);
     numInput.addEventListener('input', renderPerAgentConfigs);
+  }
+  const structInput = $('teamStructure');
+  if (structInput) {
+    structInput.addEventListener('change', renderPerAgentConfigs);
+  }
+  if (numInput) {
     renderPerAgentConfigs();
   }
 }
@@ -212,13 +223,73 @@ function collectAgentConfigs() {
   for (let i = 1; i <= num; i++) {
     configs.push({
       agent_id: i,
-      description: $('agentDesc_' + i) ? $('agentDesc_' + i).value : '',
-      structure: $('agentStruct_' + i) ? $('agentStruct_' + i).value : 'team'
+      description: $('agentDesc_' + i) ? $('agentDesc_' + i).value : ''
     });
   }
   return configs;
 }
 
+
+let currentJobId = null;
+let progressTimer = null;
+let pendingPayload = null;
+let pendingEndpoint = null;
+let pendingCallback = null;
+
+async function stopExperiment() {
+  if (!currentJobId) return;
+  const res = await apiCall('/api/experiment/' + currentJobId + '/stop', 'POST');
+  if (res && res.status === 'stopped') {
+    if (progressTimer) clearInterval(progressTimer);
+    if ($('statusBadge')) { 
+      $('statusBadge').className = 'status paused'; 
+      $('statusBadge').innerText = 'STOPPED'; 
+    }
+    if ($('stopBtn')) $('stopBtn').style.display = 'none';
+    if ($('startBtn')) $('startBtn').disabled = false;
+  }
+}
+
+function showSummaryModal(payload, endpoint, callback) {
+  pendingPayload = payload;
+  pendingEndpoint = endpoint;
+  pendingCallback = callback;
+  
+  const modelDisplay = payload.llm.multi_llm
+    ? payload.llm.selected_models.map(m => MODEL_LABELS[m] || m).join(', ')
+    : (MODEL_LABELS[payload.llm.provider_model] || payload.llm.provider_model);
+  
+  const taskLabel = {
+    lost_at_sea: 'Lost at Sea', hiring: 'Hiring Decision', desert_survival: 'Desert Survival',
+    moon_landing: 'Moon Landing', ethical_dilemma: 'Ethical Dilemma', custom: 'Custom Prompt'
+  }[payload.task.type] || payload.task.type.replace(/_/g, ' ');
+
+  let rows = [
+    ['Task', taskLabel],
+    ['Agents', payload.team.num_agents],
+    ['Rounds', payload.team.num_rounds],
+    ['Structure', payload.team.structure],
+    ['Model(s)', modelDisplay],
+  ];
+  if (payload.num_simulations) rows.push(['Replications', payload.num_simulations]);
+  if (payload.concurrency) rows.push(['Concurrency', payload.concurrency]);
+  if (payload.experiment_label) rows.push(['Label', payload.experiment_label]);
+
+  const html = `<ul class="summary-list">${rows.map(([k,v]) =>
+    `<li><strong>${k}</strong><span>${v}</span></li>`
+  ).join('')}</ul>`;
+  
+  $('summaryModalBody').innerHTML = html;
+  $('summaryModalOverlay').classList.add('active');
+}
+
+function closeSummaryModal() {
+  $('summaryModalOverlay').classList.remove('active');
+  pendingPayload = null;
+  pendingEndpoint = null;
+  pendingCallback = null;
+  if ($('startBtn')) $('startBtn').disabled = false;
+}
 
 /* =================================================================
    PURE-AI  FORM  HANDLER
@@ -251,14 +322,13 @@ function initPureAiForm() {
       researcher_notes: $('researcherNotes') ? $('researcherNotes').value : ''
     };
 
-    const data = await apiCall('/api/experiment/pure-ai/start', 'POST', payload);
-    if (data) {
+    showSummaryModal(payload, '/api/experiment/pure-ai/start', (data) => {
+      currentJobId = data.experiment_id || data.job_id;
       if ($('progressCard')) $('progressCard').style.display = 'block';
+      if ($('stopBtn')) $('stopBtn').style.display = 'inline-flex';
       if ($('statusBadge'))  { $('statusBadge').className = 'status running'; $('statusBadge').innerText = 'RUNNING'; }
-      pollProgress(data.experiment_id || data.job_id);
-    } else {
-      if (btn) btn.disabled = false;
-    }
+      pollProgress(currentJobId);
+    });
   });
 }
 
@@ -268,23 +338,29 @@ function initPureAiForm() {
    ================================================================= */
 
 function pollProgress(id) {
-  const timer = setInterval(async () => {
+  if (progressTimer) clearInterval(progressTimer);
+  progressTimer = setInterval(async () => {
     const s = await apiCall(`/api/experiment/${id}/status`);
-    if (!s) { clearInterval(timer); return; }
+    if (!s) { clearInterval(progressTimer); return; }
     if ($('progressText'))    $('progressText').innerText    = `${s.completed} / ${s.total} completed`;
     const pct = s.total ? Math.round((s.completed / s.total) * 100) : 0;
     if ($('progressPercent')) $('progressPercent').innerText = `${pct}%`;
     if ($('progressFill'))   $('progressFill').style.width   = `${pct}%`;
-    if (s.status === 'done' || s.status === 'error') {
-      clearInterval(timer);
-      if ($('statusBadge')) { $('statusBadge').className = s.status === 'done' ? 'status completed' : 'status paused'; $('statusBadge').innerText = s.status.toUpperCase(); }
+    if (s.status === 'done' || s.status === 'error' || s.status === 'stopped') {
+      clearInterval(progressTimer);
+      if ($('stopBtn')) $('stopBtn').style.display = 'none';
+      if ($('statusBadge')) { 
+        const cls = s.status === 'done' ? 'completed' : (s.status === 'stopped' ? 'stopped' : 'paused');
+        $('statusBadge').className = 'status ' + cls; 
+        $('statusBadge').innerText = s.status.toUpperCase(); 
+      }
       if (s.status === 'error') {
         if ($('errorText')) {
           $('errorText').style.display = 'block';
           $('errorText').innerText = s.error || 'The experiment failed. Check the API key and endpoint.';
         }
         if ($('startBtn')) $('startBtn').disabled = false;
-      } else {
+      } else if (s.status === 'done') {
         if ($('resultsActions')) $('resultsActions').style.display = 'block';
         if ($('dashboardLink'))  $('dashboardLink').href = `/experiment/${id}/dashboard`;
       }
@@ -324,8 +400,7 @@ function initHitlForm() {
       experiment_label: $('experimentLabel') ? $('experimentLabel').value : ''
     };
 
-    const data = await apiCall('/api/experiment/hitl/create', 'POST', payload);
-    if (data) {
+    showSummaryModal(payload, '/api/experiment/hitl/create', (data) => {
       const code = data.session_code || data.session_id;
       if ($('sessionsCard')) $('sessionsCard').style.display = 'block';
       const div = document.createElement('div');
@@ -336,12 +411,65 @@ function initHitlForm() {
           <div style="font-size:0.85rem; color:var(--text-secondary); font-family:'JetBrains Mono',monospace;">${window.location.origin}/participant/${code}</div>
         </div>
         <a href="/participant/${code}" target="_blank" class="button secondary">Open</a>
+        <button class="button danger" style="padding: 0.4rem 1rem;" onclick="stopExperimentHITL('${data.session_id}', this)">Stop</button>
       `;
       if ($('sessionList')) $('sessionList').prepend(div);
-    }
+    });
   });
 }
 
+async function stopExperimentHITL(sessionId, btn) {
+  const res = await apiCall('/api/experiment/' + sessionId + '/stop', 'POST');
+  if (res && res.status === 'stopped') {
+    btn.innerText = 'Stopped';
+    btn.disabled = true;
+  }
+}
+
+
+/* =================================================================
+   CUSTOM MODAL LOGIC
+   ================================================================= */
+
+function showInfoModal(type) {
+  const overlay = $('infoModalOverlay');
+  const titleEl = $('infoModalTitle');
+  const bodyEl = $('infoModalBody');
+  if (!overlay || !titleEl || !bodyEl) return;
+
+  if (type === 'task') {
+    titleEl.innerText = 'Task Configuration';
+    bodyEl.innerHTML = `
+      <p><strong>Task Configuration</strong> defines the specific scenario, problem, or decision the AI team must tackle.</p>
+      <ul>
+        <li><strong>Lost at Sea (Scored):</strong> Rank 15 survival items after a shipwreck. The AI's list is compared to expert coast guard answers.</li>
+        <li><strong>Hiring Decision (Unscored):</strong> Compare candidates and discuss trade-offs in technical skill vs. culture fit.</li>
+        <li><strong>Desert Survival (Scored):</strong> Rank items for surviving in a desert. Compared to expert answers.</li>
+        <li><strong>Moon Landing (Scored):</strong> Rank items for a 200-mile trek on the moon. Compared to NASA expert answers.</li>
+        <li><strong>Ethical Dilemma (Unscored):</strong> Debate competing moral frameworks without a strict ground truth.</li>
+        <li><strong>Custom Prompt:</strong> Provide your own completely custom instructions for the team to solve.</li>
+      </ul>
+    `;
+  } else if (type === 'structure') {
+    titleEl.innerText = 'Interdependence Structure';
+    bodyEl.innerHTML = `
+      <p><strong>Interdependence Structure</strong> dictates how the AI agents communicate with each other during a round.</p>
+      <ul>
+        <li><strong>Pooled:</strong> Agents work completely independently without seeing each other's work. Their individual results are aggregated at the end.</li>
+        <li><strong>Sequential:</strong> Agents pass their work to the next agent in a chain, building upon the previous agent's output.</li>
+        <li><strong>Reciprocal:</strong> Agents are split evenly into two parallel groups (Group A and Group B). The groups discuss independently and their messages are merged at the end of each round.</li>
+        <li><strong>Team:</strong> All agents discuss together simultaneously in a shared, fully open round-robin format.</li>
+      </ul>
+    `;
+  }
+
+  overlay.classList.add('active');
+}
+
+function closeInfoModal(e) {
+  const overlay = $('infoModalOverlay');
+  if (overlay) overlay.classList.remove('active');
+}
 
 /* =================================================================
    BOOT
@@ -352,4 +480,24 @@ document.addEventListener('DOMContentLoaded', () => {
   initPerAgentConfigs();
   initPureAiForm();
   initHitlForm();
+  
+  if ($('summaryConfirmBtn')) {
+    $('summaryConfirmBtn').addEventListener('click', async () => {
+      if (!pendingPayload || !pendingEndpoint) return;
+      $('summaryConfirmBtn').disabled = true;
+      $('summaryConfirmBtn').innerText = 'Launching...';
+      
+      const data = await apiCall(pendingEndpoint, 'POST', pendingPayload);
+      
+      $('summaryConfirmBtn').disabled = false;
+      $('summaryConfirmBtn').innerText = 'Confirm & Launch';
+      closeSummaryModal();
+      
+      if (data && pendingCallback) {
+        pendingCallback(data);
+      } else if (!data) {
+        if ($('startBtn')) $('startBtn').disabled = false;
+      }
+    });
+  }
 });

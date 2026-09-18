@@ -87,7 +87,7 @@
 
     <!-- ==================== 2. Task Configuration ==================== -->
     <div class="card">
-      <h2>2. Task Configuration</h2>
+      <h2>2. Task Configuration <svg onclick="showInfoModal('task')" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="cursor:pointer; margin-left:0.5rem; vertical-align:middle; opacity:0.8;" onmouseover="this.style.opacity='1'; this.style.stroke='var(--accent)'" onmouseout="this.style.opacity='0.8'; this.style.stroke='var(--primary)'"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg></h2>
       <label>Select Base Task
         <select id="taskType">
           <option value="lost_at_sea">Lost at Sea (Scored)</option>
@@ -134,7 +134,7 @@
         <label>Discussion Rounds
           <input type="number" id="numRounds" value="6" min="1" max="50">
         </label>
-        <label class="full-width">Interdependence Structure
+        <label class="full-width">Interdependence Structure <svg onclick="showInfoModal('structure')" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="cursor:pointer; margin-left:0.5rem; vertical-align:middle; opacity:0.8;" onmouseover="this.style.opacity='1'; this.style.stroke='var(--accent)'" onmouseout="this.style.opacity='0.8'; this.style.stroke='var(--primary)'"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
           <select id="teamStructure">
             <option value="pooled">Pooled — Independent work, aggregated at the end</option>
             <option value="sequential">Sequential — Agents pass work to the next in line</option>
@@ -153,10 +153,10 @@
     <div class="card">
       <h2>4. Simulation Settings</h2>
       <div class="form-grid">
-        <label>Replications
+        <label>Replications <span class="hint">(How many times to repeat the simulation)</span>
           <input type="number" id="numSimulations" value="20" min="1" max="1000">
         </label>
-        <label>Concurrency Limit
+        <label>Concurrency Limit <span class="hint">(Controls how many simulations run in parallel)</span>
           <input type="number" id="concurrency" value="5" min="1" max="50">
         </label>
         <label>Random Seed <span class="hint">(optional, for reproducibility)</span>
@@ -184,26 +184,29 @@
   </div>
 </form>
 
-<!-- Progress Section -->
-<div class="card mt-8" id="progressCard" style="display:none;">
-  <div class="flex-between">
-    <h2>Execution Progress</h2>
-    <span id="statusBadge" class="status running">Running</span>
-  </div>
-  <div class="progress-container">
-    <div class="flex-between" style="font-size:0.9rem; font-weight:500;">
-      <span id="progressText">0 / 0 completed</span>
-      <span id="progressPercent">0%</span>
+    <!-- ==================== Progress ==================== -->
+    <div class="card mt-8" id="progressCard" style="display:none; border-color:var(--primary);">
+      <div class="flex-between">
+        <h2 style="margin:0;">Simulation Progress</h2>
+        <div style="display: flex; gap: 1rem; align-items: center;">
+          <button id="stopBtn" class="button danger" style="display:none; padding: 0.4rem 1rem; font-size: 0.85rem;" onclick="stopExperiment()">Stop Experiment</button>
+          <span id="statusBadge" class="status running">RUNNING</span>
+        </div>
+      </div>
+      <div class="progress-container">
+        <div class="flex-between" style="font-size:0.9rem; font-weight:500;">
+          <span id="progressText">0 / 0 completed</span>
+          <span id="progressPercent">0%</span>
+        </div>
+        <div class="progress-bar-track">
+          <div class="progress-bar-fill" id="progressFill"></div>
+        </div>
+      </div>
+      <p id="errorText" class="mt-4" style="display:none; color:var(--danger); white-space:pre-wrap; font-size:0.9rem;"></p>
+      <div id="resultsActions" class="mt-4" style="display:none; text-align:right;">
+        <a href="#" id="dashboardLink" class="button">View Results Dashboard</a>
+      </div>
     </div>
-    <div class="progress-bar-track">
-      <div class="progress-bar-fill" id="progressFill"></div>
-    </div>
-  </div>
-  <p id="errorText" class="mt-4" style="display:none; color:var(--danger); white-space:pre-wrap; font-size:0.9rem;"></p>
-  <div id="resultsActions" class="mt-4" style="display:none; text-align:right;">
-    <a href="#" id="dashboardLink" class="button">View Results Dashboard</a>
-  </div>
-</div>
 
 {% endblock %}
 

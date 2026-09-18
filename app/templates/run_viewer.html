@@ -109,12 +109,13 @@ async function loadRun() {
     const isHuman = t.agent === 'Human' || t.actor_type === 'human';
     const cls = isHuman ? 'log-human' : 'log-agent';
     const modelTag = t.model ? ` <span style="font-size:0.7rem; background:rgba(35,45,75,0.08); padding:1px 6px; border-radius:4px;">${t.model}</span>` : '';
+    const groupTag = t.group ? ` <span style="font-size:0.7rem; background:rgba(229,114,0,0.1); color:var(--accent); padding:1px 6px; border-radius:4px;">${t.group}</span>` : '';
 
     const line = document.createElement('div');
     line.className = `log-line ${cls}`;
     line.innerHTML = `
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-        <strong style="color:${isHuman ? 'var(--accent)' : 'var(--primary)'};">${t.agent}${modelTag}</strong>
+        <strong style="color:${isHuman ? 'var(--accent)' : 'var(--primary)'};">${t.agent}${modelTag}${groupTag}</strong>
         <span style="font-size:0.7rem; color:var(--text-secondary);">Turn ${t.turn ?? i}${t.input_tokens ? ' · '+t.input_tokens+'→'+t.output_tokens+' tok' : ''}</span>
       </div>
       <div style="white-space:pre-wrap;">${t.text}</div>

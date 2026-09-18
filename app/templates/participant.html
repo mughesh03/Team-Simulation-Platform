@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Participant Session</title>
-  <link rel="stylesheet" href="/static/style.css?v=3">
+  <link rel="stylesheet" href="/static/style.css?v=6">
   <style>
     body { background-color: var(--bg-color); }
     .main-grid {
@@ -160,10 +160,11 @@ function connectWebSocket() {
       const isHuman = data.agent === 'Human' || data.actor_type === 'human';
       const cls = isHuman ? 'log-human' : 'log-agent';
       const modelTag = data.model ? ` <span style="font-size:0.68rem; background:rgba(35,45,75,0.08); padding:1px 5px; border-radius:3px;">${data.model}</span>` : '';
+      const groupTag = data.group ? ` <span style="font-size:0.68rem; background:rgba(229,114,0,0.1); color:var(--accent); padding:1px 5px; border-radius:3px;">${data.group}</span>` : '';
 
       const line = document.createElement('div');
       line.className = `log-line ${cls}`;
-      line.innerHTML = `<strong style="color:${isHuman?'var(--accent)':'var(--primary)'};">${data.agent}${modelTag}</strong> ${data.text}`;
+      line.innerHTML = `<strong style="color:${isHuman?'var(--accent)':'var(--primary)'};">${data.agent}${modelTag}${groupTag}</strong> ${data.text}`;
       log.appendChild(line);
       log.scrollTop = log.scrollHeight;
 

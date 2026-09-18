@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Multi-Agent Research Web Interface">
   <title>{% block title %}Team Simulation Platform{% endblock %}</title>
-  <link rel="stylesheet" href="/static/style.css?v=3">
+  <link rel="stylesheet" href="/static/style.css?v=6">
   {% block extra_head %}{% endblock %}
 </head>
 <body>
@@ -31,7 +31,40 @@
   {% block content %}{% endblock %}
 </main>
 
-<script src="/static/app.js?v=2"></script>
+<footer>
+  Team Simulation Platform · <a href="https://github.com/mughesh03/Team-Simulation-Platform" target="_blank">GitHub</a> · University of Virginia
+</footer>
+<!-- ==================== Custom Info Modal ==================== -->
+<div class="modal-overlay" id="infoModalOverlay" onclick="closeInfoModal(event)">
+  <div class="modal-content" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <h3 id="infoModalTitle">Information</h3>
+      <button class="modal-close" onclick="closeInfoModal()">&times;</button>
+    </div>
+    <div class="modal-body" id="infoModalBody">
+      <!-- Content injected by JS -->
+    </div>
+  </div>
+</div>
+
+<!-- ==================== Summary Modal ==================== -->
+<div class="modal-overlay" id="summaryModalOverlay">
+  <div class="modal-content" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <h3>Verify Configuration</h3>
+      <button class="modal-close" onclick="closeSummaryModal()">&times;</button>
+    </div>
+    <div class="modal-body" id="summaryModalBody">
+      <!-- Content injected by JS -->
+    </div>
+    <div style="padding: 1rem 2rem; border-top: 1px solid var(--card-border); display: flex; justify-content: flex-end; gap: 1rem; background: #f8f9fa;">
+      <button class="button secondary" onclick="closeSummaryModal()">Cancel</button>
+      <button class="button button-accent" id="summaryConfirmBtn">Confirm & Launch</button>
+    </div>
+  </div>
+</div>
+
+<script src="/static/app.js?v=6"></script>
 {% block scripts %}{% endblock %}
 </body>
 </html>
