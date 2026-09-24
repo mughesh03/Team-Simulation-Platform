@@ -603,3 +603,9 @@ async def runs_page(request: Request, id: str): return templates.TemplateRespons
 @app.get("/participant/{session_id}", response_class=HTMLResponse)
 async def participant_page(request: Request, session_id: str): return templates.TemplateResponse("participant.html", {"request": request})
 
+@app.get("/task-library", response_class=HTMLResponse)
+async def task_library_page(request: Request): return templates.TemplateResponse("task_library.html", {"request": request})
+
+@app.get("/research-capabilities", response_class=HTMLResponse)
+async def research_capabilities_page(request: Request): return templates.TemplateResponse("research_capabilities.html", {"request": request})
+

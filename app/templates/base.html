@@ -5,14 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Multi-Agent Research Web Interface">
   <title>{% block title %}Team Simulation Platform{% endblock %}</title>
-  <link rel="stylesheet" href="/static/style.css?v=6">
+  <link rel="stylesheet" href="/static/style.css?v=8">
   {% block extra_head %}{% endblock %}
 </head>
 <body>
 
-<header>
+<header class="site-header">
   <a href="/" class="brand">
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--primary);">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
       <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
       <circle cx="9" cy="7" r="4"></circle>
       <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
@@ -20,10 +20,12 @@
     </svg>
     Team Simulation Platform
   </a>
-  <nav>
-    <a href="/">Home</a>
-    <a href="/experiments">Experiments</a>
-    <!-- In a real implementation with auth, show logout here -->
+  <nav class="top-nav" id="topNav">
+    <a href="/">Overview</a>
+    <a href="/pure-ai">Pure AI Team Study Builder</a>
+    <a href="/hitl">AI Team with Human-in-the-Loop Study Builder</a>
+    <a href="/task-library">Task Library</a>
+    <a href="/research-capabilities">Research Capabilities</a>
   </nav>
 </header>
 
@@ -32,8 +34,9 @@
 </main>
 
 <footer>
-  Team Simulation Platform · <a href="https://github.com/mughesh03/Team-Simulation-Platform" target="_blank">GitHub</a> · University of Virginia
+  Team Simulation Platform · University of Virginia · <a href="https://github.com/mughesh03/Team-Simulation-Platform" target="_blank">GitHub</a>
 </footer>
+
 <!-- ==================== Custom Info Modal ==================== -->
 <div class="modal-overlay" id="infoModalOverlay" onclick="closeInfoModal(event)">
   <div class="modal-content" onclick="event.stopPropagation()">
@@ -64,7 +67,20 @@
   </div>
 </div>
 
-<script src="/static/app.js?v=6"></script>
+<script src="/static/app.js?v=8"></script>
+<script>
+(function() {
+  var path = window.location.pathname;
+  document.querySelectorAll('.top-nav a').forEach(function(a) {
+    var href = a.getAttribute('href');
+    if (href === '/') {
+      if (path === '/') a.classList.add('active');
+    } else if (path.startsWith(href)) {
+      a.classList.add('active');
+    }
+  });
+})();
+</script>
 {% block scripts %}{% endblock %}
 </body>
 </html>

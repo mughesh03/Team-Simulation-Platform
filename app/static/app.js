@@ -487,17 +487,90 @@ document.addEventListener('DOMContentLoaded', () => {
       $('summaryConfirmBtn').disabled = true;
       $('summaryConfirmBtn').innerText = 'Launching...';
       
+      const callback = pendingCallback;
       const data = await apiCall(pendingEndpoint, 'POST', pendingPayload);
-      
+
       $('summaryConfirmBtn').disabled = false;
       $('summaryConfirmBtn').innerText = 'Confirm & Launch';
       closeSummaryModal();
-      
-      if (data && pendingCallback) {
-        pendingCallback(data);
-      } else if (!data) {
-        if ($('startBtn')) $('startBtn').disabled = false;
+
+      if (data && callback) {
+        callback(data);
+      } else if (!data && $('startBtn')) {
+        $('startBtn').disabled = false;
       }
     });
   }
+});
+
+
+/* =================================================================
+   STRUCTURE SELECTOR  (visual card → hidden select sync)
+   ================================================================= */
+
+function selectStructure(val) {
+  document.querySelectorAll('.struct-card').forEach(c => c.classList.remove('selected'));
+  const target = document.querySelector('.struct-card[data-value="' + val + '"]');
+  if (target) target.classList.add('selected');
+  const sel = document.getElementById('teamStructure');
+  if (sel) { sel.value = val; sel.dispatchEvent(new Event('change')); }
+}
+
+
+/* =================================================================
+   COMPOSITION TOGGLE  (homogeneous / heterogeneous)
+   ================================================================= */
+
+function initCompositionToggle() {
+  const container = document.getElementById('perAgentConfigContainer');
+  const hintEl = document.getElementById('compHint');
+  const hintHeteroEl = document.getElementById('compHintHetero');
+  if (!container) return;
+
+  document.querySelectorAll('.comp-opt').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.comp-opt').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const isHetero = btn.dataset.value === 'heterogeneous';
+      container.style.display = isHetero ? 'block' : 'none';
+      if (hintEl) hintEl.style.display = isHetero ? 'none' : 'block';
+      if (hintHeteroEl) hintHeteroEl.style.display = isHetero ? 'block' : 'none';
+      if (isHetero) renderPerAgentConfigs();
+    });
+  });
+
+  // Default: homogeneous — hide per-agent container
+  container.style.display = 'none';
+}
+
+
+/* =================================================================
+   TASK DESCRIPTION HINTS
+   ================================================================= */
+
+function initTaskDescriptions() {
+  const descs = {
+    lost_at_sea:     'Rank 15 survival items following a shipwreck in the Atlantic. The team\u2019s ranking is scored against a validated expert reference from the US Coast Guard.',
+    hiring:          'Evaluate two job candidates and produce a hiring recommendation. Qualitative outcome \u2014 no ground-truth scoring.',
+    desert_survival: 'Rank survival items after a plane crash in the Sonoran desert. Scored against expert survival rankings.',
+    moon_landing:    'Rank 15 items for a 200-mile lunar trek to the base. Scored against NASA expert rankings.',
+    ethical_dilemma: 'Debate competing ethical frameworks and reach a defensible recommendation. Qualitative \u2014 no ground-truth scoring.',
+    custom:          'Provide your own task instructions below.'
+  };
+  const sel  = document.getElementById('taskType');
+  const hint = document.getElementById('taskDescHint');
+  if (!sel || !hint) return;
+  const update = () => { hint.textContent = descs[sel.value] || ''; };
+  sel.addEventListener('change', update);
+  update();
+}
+
+
+/* =================================================================
+   ADDITIONAL BOOT  (supplement existing DOMContentLoaded)
+   ================================================================= */
+
+document.addEventListener('DOMContentLoaded', () => {
+  initCompositionToggle();
+  initTaskDescriptions();
 });

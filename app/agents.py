@@ -102,8 +102,9 @@ _GENERIC_LINES = [
 
 
 KIMI_MODELS = {"kimi-k2.5"}
-# Live Kimi is ON. Mock is only used when model == "mock".
-# Previously DEMO_MODE forced mock even for kimi-k2.5; removed per approved plan.
+# Demo backend is on. Model menus and API key boxes stay in the UI,
+# but no live provider is called until private keys are wired in.
+DEMO_BACKEND = True
 _TASK_PROMPTS = {
     "lost_at_sea": (
         "You are on a team ranking 15 items for survival after a shipwreck in the Atlantic. "
@@ -358,11 +359,11 @@ async def _call_kimi(model: str, messages: list[dict], params: dict) -> tuple[st
 
 
 async def agent_turn(agent_name: str, turn_number: int, history: list[dict], params: dict) -> dict:
-    """Produce one agent turn — live Kimi K2.5 (both flows) or mock."""
+    """Produce one agent turn — live model only when a key is present, otherwise mock demo."""
     assigned_model = _assigned_model(agent_name, params)
     start = time.time()
 
-    if assigned_model in KIMI_MODELS:
+    if not DEMO_BACKEND and assigned_model in KIMI_MODELS and _api_key(params):
         messages = [{"role": "system", "content": _system_prompt(agent_name, assigned_model, params)}]
         messages.extend(_history_to_messages(history, agent_name))
         if not any(m["role"] == "user" for m in messages):
@@ -416,9 +417,9 @@ async def agent_turn(agent_name: str, turn_number: int, history: list[dict], par
 
 
 async def answer_human_question(agent_name: str, question: str, history: list[dict], params: dict) -> dict:
-    """Respond to a direct human question — live Kimi K2.5 (HITL) or mock."""
+    """Respond to a direct human question — live only with a key, otherwise mock demo."""
     assigned_model = _assigned_model(agent_name, params)
-    if assigned_model in KIMI_MODELS:
+    if not DEMO_BACKEND and assigned_model in KIMI_MODELS and _api_key(params):
         messages = [{"role": "system", "content": _system_prompt(agent_name, assigned_model, params)}]
         messages.extend(_history_to_messages(history, agent_name))
         messages.append({"role": "user", "content": f"[Human participant asked you directly] {question}"})
