@@ -15,6 +15,11 @@ import time
 import httpx
 
 try:
+    import litellm
+except ImportError:
+    pass
+
+try:
     from . import uva_secrets as _local_secrets
 except ImportError:
     try:
@@ -102,9 +107,8 @@ _GENERIC_LINES = [
 
 
 KIMI_MODELS = {"kimi-k2.5"}
-# Demo backend is on. Model menus and API key boxes stay in the UI,
-# but no live provider is called until private keys are wired in.
-DEMO_BACKEND = True
+# Demo backend is off. The backend will attempt to call real APIs for non-mock models.
+DEMO_BACKEND = False
 _TASK_PROMPTS = {
     "lost_at_sea": (
         "You are on a team ranking 15 items for survival after a shipwreck in the Atlantic. "
@@ -325,37 +329,36 @@ def _history_to_messages(history: list[dict], agent_name: str) -> list[dict]:
     return messages
 
 
-async def _call_kimi(model: str, messages: list[dict], params: dict) -> tuple[str, int, int]:
-    """Non-streaming UVA call: POST {base}/chat/completions, parse choices[0].message.content + usage."""
+async def _call_litellm(model: str, messages: list[dict], params: dict) -> tuple[str, int, int]:
+    """Call any model using litellm.acompletion."""
     api_key = _api_key(params)
     if not api_key:
-        raise RuntimeError(
-            "Kimi K2.5 key missing (hard error, no mock fallback). "
-            "Paste your key into app/uva_secrets.py -> UVARC_GENAI_API, "
-            "or set UVARC_GenAI_API env, or paste it in the UI API-key box."
-        )
-    client = await _client()
-    attempts = []
-    payload = {"model": "Kimi K2.5", "messages": messages}
-    for base_url, model_id in _kimi_endpoints(api_key):
-        payload["model"] = model_id
-        url = f"{base_url}/chat/completions"
-        for label, headers in _header_variants(api_key):
-            try:
-                response = await client.post(url, headers=headers, json=payload)
-            except (httpx.ConnectError, httpx.ConnectTimeout, httpx.TimeoutException) as exc:
-                attempts.append(f"{label} {url} -> connection error: {exc}")
-                continue
-            attempts.append(f"{label} {url} -> {_short_body(response)}")
-            if response.status_code < 400:
-                return _parse_completion(response)
-    trail = " | ".join(attempts) if attempts else "no endpoints reached"
-    raise RuntimeError(
-        "Kimi K2.5 call failed (hard error, no mock fallback). "
-        "If 401 HTML: you are off a Rivanna compute node or key is wrong. "
-        "Run from ijob / Open OnDemand on Rivanna, VPN on, key from open-webui.rc.virginia.edu. "
-        f"Details: {trail}"
-    )
+        raise RuntimeError(f"API key missing for {model}. Please provide it in the UI.")
+
+    # Configure kwargs for litellm
+    kwargs = {
+        "model": model,
+        "messages": messages,
+        "api_key": api_key,
+    }
+
+    # Special handling for Kimi on UVA RC
+    if model in KIMI_MODELS:
+        kwargs["model"] = "openai/" + model
+        base_url = os.getenv("KIMI_BASE_URL", "").strip().rstrip("/") or _local_secret("KIMI_BASE_URL")
+        kwargs["api_base"] = base_url or "https://open-webui.rc.virginia.edu/api"
+        # Optional: Some setups need standard Bearer headers
+        kwargs["extra_headers"] = {"Authorization": f"Bearer {api_key}"}
+
+    try:
+        response = await litellm.acompletion(**kwargs)
+        text = response.choices[0].message.content or ""
+        usage = response.usage
+        input_tokens = getattr(usage, "prompt_tokens", 0)
+        output_tokens = getattr(usage, "completion_tokens", 0)
+        return text, input_tokens, output_tokens
+    except Exception as exc:
+        raise RuntimeError(f"LLM call failed for {model}: {str(exc)}")
 
 
 async def agent_turn(agent_name: str, turn_number: int, history: list[dict], params: dict) -> dict:
@@ -363,7 +366,7 @@ async def agent_turn(agent_name: str, turn_number: int, history: list[dict], par
     assigned_model = _assigned_model(agent_name, params)
     start = time.time()
 
-    if not DEMO_BACKEND and assigned_model in KIMI_MODELS and _api_key(params):
+    if not DEMO_BACKEND and assigned_model != "mock" and _api_key(params):
         messages = [{"role": "system", "content": _system_prompt(agent_name, assigned_model, params)}]
         messages.extend(_history_to_messages(history, agent_name))
         if not any(m["role"] == "user" for m in messages):
@@ -376,7 +379,7 @@ async def agent_turn(agent_name: str, turn_number: int, history: list[dict], par
                 "role": "user",
                 "content": f"It is round {turn_number + 1}. Continue the discussion as {agent_name}.",
             })
-        text, input_tokens, output_tokens = await _call_kimi(assigned_model, messages, params)
+        text, input_tokens, output_tokens = await _call_litellm(assigned_model, messages, params)
         return {
             "agent": agent_name,
             "turn": turn_number,
@@ -388,7 +391,7 @@ async def agent_turn(agent_name: str, turn_number: int, history: list[dict], par
             "latency_ms": round((time.time() - start) * 1000),
         }
 
-    await asyncio.sleep(0 if os.getenv("VERCEL") else random.uniform(0.15, 0.45))
+    await asyncio.sleep(random.uniform(0.15, 0.45))
     seed = params.get("rng_seed")
     if seed is None:
         rng = random.Random()
@@ -419,11 +422,11 @@ async def agent_turn(agent_name: str, turn_number: int, history: list[dict], par
 async def answer_human_question(agent_name: str, question: str, history: list[dict], params: dict) -> dict:
     """Respond to a direct human question — live only with a key, otherwise mock demo."""
     assigned_model = _assigned_model(agent_name, params)
-    if not DEMO_BACKEND and assigned_model in KIMI_MODELS and _api_key(params):
+    if not DEMO_BACKEND and assigned_model != "mock" and _api_key(params):
         messages = [{"role": "system", "content": _system_prompt(agent_name, assigned_model, params)}]
         messages.extend(_history_to_messages(history, agent_name))
         messages.append({"role": "user", "content": f"[Human participant asked you directly] {question}"})
-        text, input_tokens, output_tokens = await _call_kimi(assigned_model, messages, params)
+        text, input_tokens, output_tokens = await _call_litellm(assigned_model, messages, params)
         return {
             "agent": agent_name,
             "turn": -1,

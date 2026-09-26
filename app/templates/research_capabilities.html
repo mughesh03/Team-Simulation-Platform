@@ -1,73 +1,86 @@
 {% extends "base.html" %}
-
 {% block title %}Research Capabilities — Team Simulation Platform{% endblock %}
 
+{% block extra_head %}
+<style>
+  main { padding: 0 !important; }
+  :root {
+    --p-bg:#f6f7fb; --p-panel:#fff; --p-ink:#18202a; --p-muted:#667085;
+    --p-line:#e5e7eb; --p-navy:#1f2a44; --p-blue:#3454d1; --p-blue2:#eef2ff;
+    --p-shadow:0 4px 20px rgba(31,42,68,.07);
+  }
+  body { background: var(--p-bg); }
+  .rc-shell { max-width: 1200px; margin: 0 auto; padding: 24px 28px 56px; }
+  .rc-hero { margin-bottom: 24px; }
+  .rc-hero .tag { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; font-weight: 700; color: var(--p-blue); margin-bottom: 8px; }
+  .rc-hero h1 { font-size: 28px; font-weight: 700; color: var(--p-navy); margin: 0 0 8px; }
+  .rc-hero p  { font-size: 14px; color: var(--p-muted); margin: 0; max-width: 720px; line-height: 1.55; }
+  .rc-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+  }
+  .rc-cap {
+    background: var(--p-panel); border: 1px solid var(--p-line);
+    border-radius: 14px; padding: 18px 18px 16px;
+    box-shadow: var(--p-shadow);
+  }
+  .rc-icon { font-size: 22px; color: var(--p-blue); margin-bottom: 10px; line-height: 1; }
+  .rc-cap h4 { font-size: 14px; font-weight: 700; color: var(--p-navy); margin: 0 0 7px; }
+  .rc-cap p  { font-size: 13px; color: var(--p-muted); line-height: 1.5; margin: 0; }
+  @media (max-width: 960px) { .rc-grid { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 640px) { .rc-grid { grid-template-columns: 1fr; } }
+</style>
+{% endblock %}
+
 {% block content %}
+<div class="rc-shell">
 
-<div class="page-header">
-  <h1>Research Capabilities</h1>
-  <p class="hint">Infrastructure for experimental studies of AI teams in organizational contexts.</p>
+  <div class="rc-hero">
+    <div class="tag">Research Capabilities</div>
+    <h1>What researchers can manipulate and observe</h1>
+    <p>The interface keeps organizational design prominent while retaining the technical controls needed to run reproducible multi-agent studies.</p>
+  </div>
+
+  <div class="rc-grid">
+
+    <div class="rc-cap">
+      <div class="rc-icon">⇄</div>
+      <h4>Interdependence</h4>
+      <p>Pooled, sequential, reciprocal, intensive/team, and extensible custom interaction structures.</p>
+    </div>
+
+    <div class="rc-cap">
+      <div class="rc-icon">▥</div>
+      <h4>Team composition</h4>
+      <p>Homogeneous or heterogeneous agents with flexible agent-specific instructions and context.</p>
+    </div>
+
+    <div class="rc-cap">
+      <div class="rc-icon">♙</div>
+      <h4>Human participant intervention</h4>
+      <p>Pause/resume the AI conversation and send an additional message to one, several, or all agents.</p>
+    </div>
+
+    <div class="rc-cap">
+      <div class="rc-icon">◫</div>
+      <h4>Task paradigms</h4>
+      <p>Team-research tasks plus custom tasks with researcher-defined prompts and scoring guidance.</p>
+    </div>
+
+    <div class="rc-cap">
+      <div class="rc-icon">⚙</div>
+      <h4>LLM settings</h4>
+      <p>Provider, model, temperature, output limits, connection settings, and shared or per-agent assignments.</p>
+    </div>
+
+    <div class="rc-cap">
+      <div class="rc-icon">✓</div>
+      <h4>Auditability</h4>
+      <p>Configurations, prompts, model versions, transcripts, intervention logs, scoring rules, and exports.</p>
+    </div>
+
+  </div>
+
 </div>
-
-<!-- 1. Interdependence -->
-<div class="cap-section">
-  <h2>Interdependence as an Experimental Manipulation</h2>
-  <p>Based on Saavedra, Earley, &amp; Van Dyne (1993). The platform implements four task interdependence structures as executable coordination protocols — not labels — giving researchers precise experimental control over how work and information flow among agents.</p>
-  <ul>
-    <li><strong>Pooled</strong> — Agents work independently. Each agent receives the task and produces output without seeing others' work. Outputs are aggregated at the end of the simulation.</li>
-    <li><strong>Sequential</strong> — Agents operate in a chain. Each agent receives the prior agent's output as input, building progressively on the team's collective work.</li>
-    <li><strong>Reciprocal</strong> — Agents are split into two subgroups that operate in parallel within each round, then exchange outputs bidirectionally before the next round begins.</li>
-    <li><strong>Team (Intensive)</strong> — All agents participate simultaneously in each round via a shared round-robin discussion, with full mutual visibility of all prior messages.</li>
-  </ul>
-</div>
-
-<!-- 2. Task Library -->
-<div class="cap-section">
-  <h2>Team Task Library</h2>
-  <p>Built-in tasks are drawn from organizational and team-research traditions. Each task has defined agent instructions and, where applicable, a scored ground truth for computing team accuracy (Spearman rank correlation against an expert reference).</p>
-  <ul>
-    <li><strong>Scored tasks</strong> (Lost at Sea, Desert Survival, Moon Landing) — produce a numeric agreement score per replication, enabling statistical comparison across conditions.</li>
-    <li><strong>Unscored tasks</strong> (Hiring Decision, Ethical Dilemma) — produce full transcripts for qualitative analysis. Useful for studying argumentation, preference aggregation, or deliberation quality.</li>
-    <li><strong>Custom tasks</strong> — researchers supply their own prompt. Can be marked scored or unscored. Supported in both Pure AI and HITL builders.</li>
-  </ul>
-</div>
-
-<!-- 3. HITL -->
-<div class="cap-section">
-  <h2>Human-in-the-Loop Experimental Design</h2>
-  <p>The HITL builder supports studies in which a human participant observes an ongoing AI-team conversation, pauses it at a moment of their choosing or at researcher-defined checkpoints, and sends messages into the team. Researchers configure three dimensions of the intervention design:</p>
-  <ul>
-    <li><strong>Intervention timing</strong> — anytime (participant-controlled), between rounds only, or at scheduled checkpoints every N rounds.</li>
-    <li><strong>Intervention target</strong> — the participant can message one specific agent, a selected subset, or the full team.</li>
-    <li><strong>Framing to the AI</strong> — the platform presents human input to agents as a human teammate message, a system instruction, or advisory context (non-binding suggestion), controlling how the intervention is interpreted by the models.</li>
-  </ul>
-  <p style="margin-top:0.75rem; margin-bottom:0;">Each HITL session generates a unique participant link. All human interventions are logged with timestamps and recipients, and are exportable alongside the full conversation transcript.</p>
-</div>
-
-<!-- 4. Data Capture -->
-<div class="cap-section">
-  <h2>Data Capture and Export</h2>
-  <p>Every run captures the following:</p>
-  <ul>
-    <li>Task configuration, team structure, agent count, and model metadata</li>
-    <li>Token usage (input and output) and per-turn latency</li>
-    <li>Full conversation transcript with agent labels and round indices</li>
-    <li>Human interventions for HITL sessions (content, recipient, timestamp, event type)</li>
-    <li>Summary score where applicable (Spearman correlation against expert reference)</li>
-  </ul>
-  <p style="margin-bottom:0;">Data is exportable as JSON (full transcript + config) and CSV (per-event log). API keys are never stored on the server.</p>
-</div>
-
-<!-- 5. Simulation Scale -->
-<div class="cap-section">
-  <h2>Simulation Scale</h2>
-  <p>Pure AI studies support up to 1,000 replications per experiment run with configurable parallelism (concurrency limit). An optional random seed enables fully reproducible simulation sequences across conditions. All results are accessible from the run dashboard and individual transcript viewer.</p>
-  <p style="margin-bottom:0;">HITL sessions are single-participant and run in real time over a WebSocket connection. Multiple concurrent HITL sessions are supported server-side.</p>
-</div>
-
-<!-- Citation -->
-<div class="cite-block">
-  <strong>Reference:</strong> Saavedra, R., Earley, P. C., &amp; Van Dyne, L. (1993). Complex interdependence in task-performing groups. <em>Journal of Applied Psychology, 78</em>(1), 61–72.
-</div>
-
 {% endblock %}

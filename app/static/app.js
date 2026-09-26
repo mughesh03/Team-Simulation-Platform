@@ -573,4 +573,56 @@ function initTaskDescriptions() {
 document.addEventListener('DOMContentLoaded', () => {
   initCompositionToggle();
   initTaskDescriptions();
+  initWizard();
 });
+
+/* =================================================================
+   WIZARD LOGIC
+   ================================================================= */
+function initWizard() {
+  const sidebarLinks = document.querySelectorAll('.wizard-step-link');
+  const panes = document.querySelectorAll('.wizard-pane');
+  if (sidebarLinks.length === 0 || panes.length === 0) return;
+
+  function showStep(stepStr) {
+    const stepId = parseInt(stepStr);
+    
+    // Update Sidebar
+    sidebarLinks.forEach(link => {
+      const linkStep = parseInt(link.dataset.step);
+      link.classList.remove('active');
+      if (linkStep === stepId) {
+        link.classList.add('active');
+      } else if (linkStep < stepId) {
+        link.classList.add('completed');
+      } else {
+        link.classList.remove('completed');
+      }
+    });
+
+    // Update Panes
+    panes.forEach(pane => {
+      pane.classList.remove('active');
+      if (parseInt(pane.dataset.step) === stepId) {
+        pane.classList.add('active');
+      }
+    });
+  }
+
+  // Expose global nav function
+  window.goToWizardStep = function(stepId) {
+    showStep(stepId);
+  };
+}
+
+/* =================================================================
+   BASE TASK SELECTOR
+   ================================================================= */
+function selectBaseTask(val) {
+  document.querySelectorAll('.base-task-card').forEach(c => c.classList.remove('selected'));
+  const target = document.querySelector('.base-task-card[data-value="' + val + '"]');
+  if (target) target.classList.add('selected');
+  const sel = document.getElementById('taskType');
+  if (sel) { sel.value = val; sel.dispatchEvent(new Event('change')); }
+}
+

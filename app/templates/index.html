@@ -1,164 +1,308 @@
 {% extends "base.html" %}
-
 {% block title %}Team Simulation Platform{% endblock %}
+
+{% block extra_head %}
+<style>
+  main { padding: 0 !important; overflow-x: hidden; }
+  :root {
+    --p-bg:#f4f6fa; --p-panel:#fff; --p-ink:#18202a; --p-muted:#667085;
+    --p-line:#e5e7eb; --p-navy:#182138; --p-blue:#3454d1; --p-blue2:#eef2ff;
+    --p-shadow:0 10px 32px rgba(24,33,56,.08);
+  }
+  body { background: var(--p-bg); }
+  
+  /* ── Page wrapper - Uses full width with padding ── */
+  .ov-shell {
+    width: 100%; padding: 24px; box-sizing: border-box;
+    display: flex; flex-direction: column; gap: 32px;
+  }
+
+  /* ── Top section: Hero Card + Features Grid ── */
+  .ov-top-row {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 32px;
+  }
+
+  /* ── Floating Hero Card ── */
+  .ov-hero-card {
+    background: var(--p-navy);
+    border-radius: 24px; padding: 40px;
+    box-shadow: 0 16px 40px rgba(24,33,56,.2);
+    display: flex; flex-direction: column;
+  }
+  .ov-hero-card .super {
+    font-size: 11px; letter-spacing: .12em; text-transform: uppercase;
+    font-weight: 800; color: #bfcaff; margin-bottom: 12px;
+  }
+  .ov-hero-card h1 {
+    font-size: 34px; font-weight: 800; color: #fff; margin: 0 0 16px; line-height: 1.15;
+  }
+  .ov-hero-card > p {
+    font-size: 15px; color: #b0bcd8; line-height: 1.6; margin: 0 0 32px; max-width: 460px;
+  }
+  .ov-choices { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: auto; }
+  .ov-choice {
+    background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.12);
+    border-radius: 16px; padding: 20px; display: flex; flex-direction: column; gap: 10px;
+    transition: transform .15s, background .15s;
+  }
+  .ov-choice:hover { background: rgba(255,255,255,.11); transform: translateY(-3px); }
+  .ov-choice h3 { font-size: 14px; font-weight: 700; color: #fff; margin: 0; }
+  .ov-choice p  { font-size: 13px; color: #9eb3d8; line-height: 1.45; margin: 0; flex: 1; }
+  .ov-choice a {
+    display: inline-block; margin-top: 14px; font-size: 13px; font-weight: 700;
+    color: #fff; background: var(--p-blue); border-radius: 12px; padding: 10px 14px;
+    text-decoration: none; transition: .12s; text-align: center;
+  }
+  .ov-choice a:hover { background: #2646c0; }
+
+  /* ── Right side: 4 Floating Feature Cards ── */
+  .ov-feats {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 20px;
+    align-content: stretch;
+  }
+  .ov-feat {
+    background: var(--p-panel); border: 1px solid var(--p-line);
+    border-radius: 24px; padding: 26px 24px 24px;
+    box-shadow: var(--p-shadow);
+    transition: transform .15s;
+  }
+  .ov-feat:hover { transform: translateY(-2px); }
+  .ov-feat h3 { font-size: 15px; font-weight: 700; color: var(--p-navy); margin: 0 0 10px; }
+  .ov-feat p  { font-size: 14px; color: var(--p-muted); line-height: 1.55; margin: 0; }
+
+  /* ── 3 Floating Capability Pills ── */
+  .ov-caps {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;
+  }
+  .ov-cap {
+    background: var(--p-panel); border: 1px solid var(--p-line);
+    border-radius: 24px; padding: 24px 28px;
+    box-shadow: var(--p-shadow); display: flex; gap: 16px; align-items: flex-start;
+    transition: transform .15s;
+  }
+  .ov-cap:hover { transform: translateY(-2px); }
+  .ov-cap-icon { font-size: 26px; color: var(--p-blue); flex-shrink: 0; margin-top: -2px; }
+  .ov-cap h4 { font-size: 15px; font-weight: 700; color: var(--p-navy); margin: 0 0 6px; }
+  .ov-cap p  { font-size: 14px; color: var(--p-muted); line-height: 1.45; margin: 0; }
+
+  /* ── Floating Experiment History Card ── */
+  .ov-history {
+    background: var(--p-panel); border: 1px solid var(--p-line);
+    border-radius: 24px; overflow: hidden; box-shadow: var(--p-shadow);
+  }
+  .ov-hist-head {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    padding: 26px 32px 20px; border-bottom: 1px solid var(--p-line); gap: 16px;
+  }
+  .ov-hist-head h2 { font-size: 20px; font-weight: 700; color: var(--p-navy); margin: 0 0 6px; }
+  .ov-hist-head p  { font-size: 14px; color: var(--p-muted); margin: 0; }
+  .ov-hist-btn {
+    flex-shrink: 0; font-size: 13px; font-weight: 600; padding: 8px 16px;
+    border: 1px solid var(--p-line); background: #fff; color: #344054;
+    border-radius: 12px; cursor: pointer; font-family: inherit; transition: .12s;
+  }
+  .ov-hist-btn:hover { background: #f8fafc; }
+  
+  .ov-htable { width: 100%; border-collapse: collapse; font-size: 14px; }
+  .ov-htable th {
+    text-align: left; padding: 14px 32px; font-size: 13px; font-weight: 600;
+    color: #475467; background: #f9fafb; border-bottom: 1px solid var(--p-line);
+  }
+  .ov-htable td {
+    padding: 16px 32px; border-bottom: 1px solid #f2f4f7;
+    color: var(--p-ink); vertical-align: middle;
+  }
+  .ov-htable tr:last-child td { border-bottom: 0; }
+  .ov-htable tbody tr:hover td { background: #fafbfc; }
+  
+  .ov-badge {
+    display: inline-block; font-size: 11px; font-weight: 700;
+    border-radius: 999px; padding: 5px 12px; white-space: nowrap;
+  }
+  .ov-badge.pure { background: var(--p-blue2); color: var(--p-blue); }
+  .ov-badge.hitl { background: #f3f0ff; color: #6d4aff; }
+  .ov-status {
+    display: inline-block; font-size: 11px; font-weight: 700;
+    border-radius: 999px; padding: 5px 12px; background: #f2f4f7; color: #475467;
+  }
+  .ov-status.running { background: #dcfce7; color: #166534; }
+  .ov-status.done    { background: #dbeafe; color: #1d4ed8; }
+  .ov-status.mock    { background: #fef9c3; color: #92400e; }
+  .ov-status.error   { background: #fee2e2; color: #991b1b; }
+  
+  .ov-alink {
+    font-size: 12px; font-weight: 600; padding: 7px 14px; border-radius: 10px;
+    border: 1px solid var(--p-line); background: #fff; color: #344054;
+    cursor: pointer; text-decoration: none; display: inline-block; font-family: inherit;
+    transition: .12s;
+  }
+  .ov-alink:hover { background: var(--p-blue2); border-color: #c9d3ff; color: var(--p-blue); }
+  .ov-empty { text-align: center; padding: 60px 20px; color: var(--p-muted); font-size: 15px; }
+
+  @media (max-width: 1024px) {
+    .ov-shell { padding: 30px; }
+    .ov-top-row { grid-template-columns: 1fr; }
+    .ov-caps { grid-template-columns: 1fr; }
+    .ov-feats { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 640px) {
+    .ov-shell { padding: 20px; }
+    .ov-feats { grid-template-columns: 1fr; }
+    .ov-choices { grid-template-columns: 1fr; }
+  }
+</style>
+{% endblock %}
 
 {% block content %}
 
-<!-- ── Hero ─────────────────────────────────────────────────────── -->
-<div class="hero">
-  <div class="hero-inner">
-    <div class="hero-label">Experimental Infrastructure for Organizational Science</div>
-    <h1 class="hero-headline">Build and study AI teams.</h1>
-    <p class="hero-desc">Design reproducible experiments around interdependence structure, team tasks, agent composition, and human intervention, then configure the underlying LLMs at the end of the study design.</p>
-    <div class="hero-cta-grid">
-      <div class="hero-cta-card">
-        <div class="hero-cta-label">Pure AI Team</div>
-        <p>Study multi-agent teams without a human participant in the interaction loop.</p>
-        <a href="/pure-ai" class="button hero-btn">Build Pure AI Study →</a>
-      </div>
-      <div class="hero-cta-card">
-        <div class="hero-cta-label">AI Team with Human-in-the-Loop</div>
-        <p>Let a human participant pause the AI conversation and send additional messages during the task.</p>
-        <a href="/hitl" class="button hero-btn">Build Human-in-the-Loop Study →</a>
-      </div>
-    </div>
-  </div>
-</div>
+<div class="ov-shell">
 
-<!-- ── Feature Cards ─────────────────────────────────────────────── -->
-<div class="features-section">
-  <div class="features-grid">
-    <div class="feature-card">
-      <div class="feature-num">①</div>
-      <h3>Interdependence as a manipulation</h3>
-      <p>Operationalize pooled, sequential, reciprocal, and intensive/team interdependence as executable coordination structures.</p>
-    </div>
-    <div class="feature-card">
-      <div class="feature-num">②</div>
-      <h3>Team-research task library</h3>
-      <p>Use tasks adapted from organizational and team research, or bring a custom task with researcher-defined instructions and scoring.</p>
-    </div>
-    <div class="feature-card">
-      <div class="feature-num">③</div>
-      <h3>Simple heterogeneous team setup</h3>
-      <p>Choose homogeneous or heterogeneous agents. For heterogeneous teams, give each agent a single flexible context/instruction field for persona, expertise, information, or constraints.</p>
-    </div>
-    <div class="feature-card">
-      <div class="feature-num">④</div>
-      <h3>Human-in-the-loop interventions</h3>
-      <p>In the HITL builder, participants can pause the agent conversation and message one agent, selected agents, or the full team.</p>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon-sm">
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="5" cy="5" r="3"/><circle cx="15" cy="5" r="3"/><circle cx="5" cy="15" r="3"/>
-          <line x1="5" y1="8" x2="5" y2="12"/><line x1="8" y1="5" x2="12" y2="5"/>
-          <line x1="8" y1="15" x2="12" y2="15"/><circle cx="15" cy="15" r="3"/>
-        </svg>
-      </div>
-      <h3>Organizational structure</h3>
-      <p>Manipulate how work and intermediate outputs flow among agents.</p>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon-sm">
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="2" y="2" width="7" height="7" rx="1"/><rect x="11" y="2" width="7" height="7" rx="1"/>
-          <rect x="2" y="11" width="7" height="7" rx="1"/><rect x="11" y="11" width="7" height="7" rx="1"/>
-        </svg>
-      </div>
-      <h3>Research task configuration</h3>
-      <p>Combine established team-research paradigms with custom researcher tasks.</p>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon-sm">
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="10" cy="10" r="3"/><path d="M10 1v3M10 16v3M1 10h3M16 10h3"/>
-          <path d="M3.5 3.5l2 2M14.5 14.5l2 2M3.5 16.5l2-2M14.5 5.5l2-2"/>
-        </svg>
-      </div>
-      <h3>LLM configuration at the end</h3>
-      <p>Keep theory and study design upfront while preserving model-level configuration before launch.</p>
-    </div>
-  </div>
-</div>
+  <!-- ── Top row: Floating Hero + Floating Feature Grid ── -->
+  <div class="ov-top-row">
 
-<!-- ── Experiment History ─────────────────────────────────────────── -->
-<div class="history-section">
-  <div class="flex-between" style="margin-bottom:0.5rem;">
-    <h2 style="margin:0; font-size:1.1rem;">Experiment History</h2>
-    <button class="button secondary" style="font-size:0.8rem; padding:0.35rem 0.9rem;" onclick="clearHistoryView()">Clear History</button>
+    <!-- Floating Hero Card -->
+    <div class="ov-hero-card">
+      <div class="super">Experimental infrastructure for organizational science</div>
+      <h1>Build and study AI teams.</h1>
+      <p>Design reproducible experiments around interdependence structure, team tasks, agent composition, and human intervention — then configure the underlying LLMs at the end of the study design.</p>
+      
+      <div class="ov-choices">
+        <div class="ov-choice">
+          <h3>Pure AI Team</h3>
+          <p>Study multi-agent teams without a human participant in the interaction loop.</p>
+          <a href="/pure-ai">Build Pure AI Study →</a>
+        </div>
+        <div class="ov-choice">
+          <h3>AI Team with Human-in-the-Loop</h3>
+          <p>Let a participant pause the AI conversation and send messages during the task.</p>
+          <a href="/hitl">Build HITL Study →</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4 Floating Feature Cards -->
+    <div class="ov-feats">
+      <div class="ov-feat">
+        <h3>① Interdependence as a manipulation</h3>
+        <p>Operationalize pooled, sequential, reciprocal, and intensive team interdependence as executable coordination structures.</p>
+      </div>
+      <div class="ov-feat">
+        <h3>② Team-research task library</h3>
+        <p>Use tasks adapted from organizational and team research, or bring a custom task with researcher-defined scoring.</p>
+      </div>
+      <div class="ov-feat">
+        <h3>③ Simple heterogeneous team setup</h3>
+        <p>Choose homogeneous or heterogeneous agents. Give each agent a flexible context field for persona, expertise, or constraints.</p>
+      </div>
+      <div class="ov-feat">
+        <h3>④ Human-in-the-loop interventions</h3>
+        <p>In the HITL builder, participants can pause the agent conversation and message one, selected, or all agents.</p>
+      </div>
+    </div>
+
   </div>
-  <p style="font-size:0.82rem; margin:0 0 0.75rem; color:var(--text-secondary);">Saved configurations and launched prototype studies are kept in this browser. API keys are never stored.</p>
-  <table class="history-table" id="historyTable">
-    <thead>
-      <tr>
-        <th>Type</th>
-        <th>Task</th>
-        <th>Agents</th>
-        <th>Structure</th>
-        <th>Models</th>
-        <th>Status</th>
-        <th>Actions</th>
-      </tr>
-    </thead>
-    <tbody id="historyBody">
-      <tr id="historyEmpty">
-        <td colspan="7" style="text-align:center; padding:2.5rem; color:var(--text-secondary); font-size:0.85rem;">
-          No experiments yet. Configure a study above to get started.
-        </td>
-      </tr>
-    </tbody>
-  </table>
+
+  <!-- ── 3 Floating Capability Pills ── -->
+  <div class="ov-caps">
+    <div class="ov-cap">
+      <div class="ov-cap-icon">⇄</div>
+      <div><h4>Organizational structure</h4><p>Manipulate how work and intermediate outputs flow among agents.</p></div>
+    </div>
+    <div class="ov-cap">
+      <div class="ov-cap-icon">▦</div>
+      <div><h4>Research task configuration</h4><p>Combine established team-research paradigms with custom researcher tasks.</p></div>
+    </div>
+    <div class="ov-cap">
+      <div class="ov-cap-icon">⚙</div>
+      <div><h4>LLM configuration at the end</h4><p>Keep theory and study design upfront while preserving model-level configuration before launch.</p></div>
+    </div>
+  </div>
+
+  <!-- ── Floating Experiment History Card ── -->
+  <div class="ov-history">
+    <div class="ov-hist-head">
+      <div>
+        <h2>Experiment History</h2>
+        <p>Saved configurations and launched studies. API keys are never stored.</p>
+      </div>
+      <button class="ov-hist-btn" onclick="clearHistoryView()">Clear History</button>
+    </div>
+    <table class="ov-htable">
+      <thead>
+        <tr>
+          <th>Type</th><th>Task</th><th>Agents</th>
+          <th>Structure</th><th>Models</th><th>Status</th><th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="historyBody">
+        <tr><td colspan="7" class="ov-empty" id="historyEmpty">No experiments yet. Configure a Pure AI or Human-in-the-Loop study and save or launch it to see it here.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
 </div>
 
 <script>
 const TASK_LABELS_IDX = {
-  lost_at_sea: 'Lost at Sea', hiring: 'Hiring Decision', desert_survival: 'Desert Survival',
-  moon_landing: 'Moon Landing', ethical_dilemma: 'Ethical Dilemma', custom: 'Custom'
+  lost_at_sea:'Lost at Sea', hiring:'Hiring Decision', desert_survival:'Desert Survival',
+  moon_landing:'Moon Landing', ethical_dilemma:'Ethical Dilemma', custom:'Custom',
+  'Hidden-Profile Decision Task':'Hidden-Profile Decision Task',
+  'Specialist Coordination Task':'Specialist Coordination Task',
+  'Ranking / Selection Task':'Ranking / Selection Task',
+  'Idea Generation + Evaluation':'Idea Generation + Evaluation'
 };
-const STATUS_CLS = { done: 'completed', running: 'running', active: 'running', completed: 'completed', error: 'paused', stopped: 'stopped' };
 
 async function loadHistory() {
+  const body = document.getElementById('historyBody');
+  let allItems = [];
+
+  // Backend experiments
   try {
     const res = await fetch('/api/experiments');
     const data = await res.json();
-    const experiments = data.experiments || [];
-    const body = document.getElementById('historyBody');
-    const emptyRow = document.getElementById('historyEmpty');
-    if (experiments.length === 0) { if (emptyRow) emptyRow.style.display = ''; return; }
-    if (emptyRow) emptyRow.style.display = 'none';
-    body.innerHTML = '';
-    experiments.forEach(exp => {
-      const isHitl = exp.type === 'HITL';
-      const models = (exp.models || []).join(', ') || 'mock';
-      const task = TASK_LABELS_IDX[exp.task_type] || exp.task_type || '—';
-      const sc = STATUS_CLS[exp.status] || 'running';
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td><span class="exp-badge ${isHitl ? 'hitl' : 'pure-ai'}">${isHitl ? 'HITL' : 'Pure AI'}</span></td>
-        <td style="font-size:0.85rem;">${task}${exp.label ? '<br><span class="hint">'+exp.label+'</span>' : ''}</td>
-        <td style="font-size:0.85rem;">${exp.num_agents}</td>
-        <td style="font-size:0.85rem; text-transform:capitalize;">${exp.team_structure || '—'}</td>
-        <td style="font-size:0.8rem; color:var(--text-secondary);">${models}</td>
-        <td><span class="status ${sc}" style="font-size:0.7rem;">${exp.status}</span></td>
-        <td style="font-size:0.82rem; white-space:nowrap;">
-          ${exp.type === 'Pure AI' && exp.status === 'done'
-            ? `<a href="/experiment/${exp.id}/dashboard" class="button secondary" style="padding:0.25rem 0.65rem; font-size:0.75rem;">Dashboard</a>`
-            : ''}
-          ${exp.type === 'HITL'
-            ? `<a href="/participant/${exp.id}" target="_blank" class="button secondary" style="padding:0.25rem 0.65rem; font-size:0.75rem;">Open</a>`
-            : ''}
-        </td>
-      `;
-      body.appendChild(tr);
-    });
-  } catch(e) { console.warn('Could not load experiment history', e); }
+    allItems.push(...(data.experiments || []));
+  } catch {}
+
+  // localStorage from builders
+  ['pbExperimentHistoryV1','pbHitlHistoryV1'].forEach(k => {
+    try { allItems.push(...JSON.parse(localStorage.getItem(k)||'[]')); } catch {}
+  });
+
+  if (!allItems.length) {
+    body.innerHTML = '<tr><td colspan="7" class="ov-empty">No experiments yet. Configure a Pure AI or Human-in-the-Loop study and save or launch it to see it here.</td></tr>';
+    return;
+  }
+
+  body.innerHTML = allItems.map(exp => {
+    const isHitl = (exp.type||'').toLowerCase().includes('hitl');
+    const task = exp.task_type || exp.task || '—';
+    const agents = exp.num_agents || exp.agents || '—';
+    const structure = (exp.team_structure || exp.structure || '—');
+    const model = (Array.isArray(exp.models)?exp.models.join(', '):'') || exp.model || '—';
+    const status = exp.status || 'Saved';
+    const statusCls = status.toLowerCase()==='running'?'running':status.toLowerCase()==='done'?'done':status.toLowerCase().includes('mock')?'mock':status.toLowerCase()==='error'?'error':'';
+    const id = exp.id || '';
+    const label = exp.label || '';
+    return `
+    <tr>
+      <td><span class="ov-badge ${isHitl?'hitl':'pure'}">${isHitl?'HITL':'Pure AI'}</span></td>
+      <td>${task}${label?`<div style="font-size:11px;color:var(--p-muted);margin-top:4px;">${label}</div>`:''}</td>
+      <td>${agents}</td>
+      <td style="text-transform:capitalize;">${structure}</td>
+      <td style="color:var(--p-muted);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${model}">${model}</td>
+      <td><span class="ov-status ${statusCls}">${status}</span></td>
+      <td>
+        ${!isHitl&&id?`<a href="/experiment/${id}/dashboard" class="ov-alink">Dashboard</a>`:''}
+        ${isHitl&&id?`<a href="/participant/${id}" target="_blank" class="ov-alink">Open</a>`:''}
+      </td>
+    </tr>`;
+  }).join('');
 }
 
 function clearHistoryView() {
-  if (!confirm('Clear the displayed history? In-memory experiment records will be removed from view.')) return;
-  document.getElementById('historyBody').innerHTML =
-    '<tr><td colspan="7" style="text-align:center;padding:2.5rem;color:var(--text-secondary);font-size:0.85rem;">No experiments yet.</td></tr>';
+  if (!confirm('Clear all experiment history?')) return;
+  ['pbExperimentHistoryV1','pbHitlHistoryV1'].forEach(k => localStorage.removeItem(k));
+  document.getElementById('historyBody').innerHTML = '<tr><td colspan="7" class="ov-empty">No experiments yet.</td></tr>';
 }
 
 document.addEventListener('DOMContentLoaded', loadHistory);

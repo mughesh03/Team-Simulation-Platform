@@ -1,92 +1,155 @@
 {% extends "base.html" %}
-
 {% block title %}Task Library — Team Simulation Platform{% endblock %}
 
+{% block extra_head %}
+<style>
+  main { padding: 0 !important; }
+  :root {
+    --p-bg:#f6f7fb; --p-panel:#fff; --p-ink:#18202a; --p-muted:#667085;
+    --p-line:#e5e7eb; --p-navy:#1f2a44; --p-blue:#3454d1; --p-blue2:#eef2ff;
+    --p-purple:#6d4aff; --p-shadow:0 4px 20px rgba(31,42,68,.07);
+  }
+  body { background: var(--p-bg); }
+  .tl-shell { max-width: 1200px; margin: 0 auto; padding: 24px 28px 56px; }
+  .tl-hero { margin-bottom: 24px; }
+  .tl-hero .tag { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; font-weight: 700; color: var(--p-blue); margin-bottom: 8px; }
+  .tl-hero h1 { font-size: 28px; font-weight: 700; color: var(--p-navy); margin: 0 0 8px; }
+  .tl-hero p  { font-size: 14px; color: var(--p-muted); margin: 0; max-width: 720px; line-height: 1.55; }
+  .tl-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+  .tl-card {
+    background: var(--p-panel); border: 1px solid var(--p-line);
+    border-radius: 14px; padding: 18px 18px 16px;
+    box-shadow: var(--p-shadow); display: flex; flex-direction: column;
+  }
+  .tl-kicker {
+    font-size: 10px; font-weight: 700; color: var(--p-purple);
+    text-transform: uppercase; letter-spacing: .07em; margin-bottom: 8px;
+  }
+  .tl-card h3 { font-size: 16px; font-weight: 700; color: var(--p-navy); margin: 0 0 8px; }
+  .tl-card p  { font-size: 13px; color: var(--p-muted); margin: 0; line-height: 1.5; flex: 1; }
+  .tl-meta { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+  .tl-chip { font-size: 10px; color: #475467; background: #f2f4f7; border-radius: 999px; padding: 5px 8px; }
+  .tl-cite {
+    font-size: 11px; color: var(--p-muted); margin-top: 12px;
+    border-top: 1px solid #eef1f4; padding-top: 10px; line-height: 1.45;
+  }
+  .tl-actions { margin-top: 14px; display: flex; gap: 8px; flex-wrap: wrap; }
+  .tl-btn {
+    font-size: 11px; font-weight: 600; padding: 7px 12px; border-radius: 8px;
+    border: 1px solid var(--p-line); background: #fff; color: #344054;
+    cursor: pointer; text-decoration: none; display: inline-flex; align-items: center;
+    gap: 5px; transition: .12s; font-family: inherit;
+  }
+  .tl-btn:hover { background: #f8fafc; border-color: #c9d3ff; color: var(--p-blue); }
+  .tl-btn.primary { background: var(--p-blue); color: #fff; border-color: var(--p-blue); }
+  .tl-btn.primary:hover { background: #2646c0; }
+  .custom-banner {
+    margin-top: 18px; background: var(--p-panel); border: 1px solid var(--p-line);
+    border-radius: 14px; padding: 20px 22px; box-shadow: var(--p-shadow);
+    display: flex; justify-content: space-between; align-items: center; gap: 24px;
+  }
+  .custom-banner h3 { font-size: 15px; font-weight: 700; color: var(--p-navy); margin: 0 0 5px; }
+  .custom-banner p  { font-size: 13px; color: var(--p-muted); margin: 0; line-height: 1.5; max-width: 640px; }
+  .custom-banner .actions { display: flex; gap: 8px; flex-shrink: 0; }
+  @media (max-width: 860px) {
+    .tl-grid { grid-template-columns: 1fr; }
+    .custom-banner { flex-direction: column; align-items: flex-start; }
+  }
+</style>
+{% endblock %}
+
 {% block content %}
+<div class="tl-shell">
 
-<div class="page-header">
-  <h1>Task Library</h1>
-  <p class="hint">Tasks adapted from organizational and team research. Use one as-is, or bring a custom task.</p>
+  <div class="tl-hero">
+    <div class="tag">Team Research Task Library</div>
+    <h1>Research-oriented team tasks</h1>
+    <p>Use tasks adapted from team and organizational research, while retaining a custom-task path for new domains and researcher-created protocols.</p>
+  </div>
+
+  <div class="tl-grid">
+
+    <!-- Hidden-Profile Decision Task -->
+    <div class="tl-card">
+      <div class="tl-kicker">Information integration</div>
+      <h3>Hidden-Profile Decision Task</h3>
+      <p>Unique and shared clues are distributed across team members. The team succeeds only when unique information is surfaced and integrated.</p>
+      <div class="tl-meta">
+        <span class="tl-chip">Information sharing</span>
+        <span class="tl-chip">Expertise recognition</span>
+        <span class="tl-chip">Objective scoring</span>
+      </div>
+      <div class="tl-cite">Adapted from classic hidden-profile team research. Unique information asymmetry requires active knowledge sharing and integration for a correct decision.</div>
+      <div class="tl-actions">
+        <a href="/pure-ai" class="tl-btn">Use in Pure AI Study</a>
+        <a href="/hitl" class="tl-btn">Use in HITL Study</a>
+      </div>
+    </div>
+
+    <!-- Specialist Coordination Task -->
+    <div class="tl-card">
+      <div class="tl-kicker">Distributed expertise</div>
+      <h3>Specialist Coordination Task</h3>
+      <p>Members hold differentiated expertise needed for a joint solution, enabling study of expertise utilization and coordination.</p>
+      <div class="tl-meta">
+        <span class="tl-chip">Distributed knowledge</span>
+        <span class="tl-chip">Specialization</span>
+        <span class="tl-chip">Coordination</span>
+      </div>
+      <div class="tl-cite">Researcher can attach source publication and implementation notes. Each agent is given a domain-specific role and must contribute their expertise to reach a joint solution.</div>
+      <div class="tl-actions">
+        <a href="/pure-ai" class="tl-btn">Use in Pure AI Study</a>
+        <a href="/hitl" class="tl-btn">Use in HITL Study</a>
+      </div>
+    </div>
+
+    <!-- Ranking / Selection Task -->
+    <div class="tl-card">
+      <div class="tl-kicker">Decision making</div>
+      <h3>Ranking / Selection Task</h3>
+      <p>Teams evaluate alternatives using distributed criteria, providing transparent performance benchmarks and process traces.</p>
+      <div class="tl-meta">
+        <span class="tl-chip">Judgment</span>
+        <span class="tl-chip">Consensus</span>
+        <span class="tl-chip">Decision quality</span>
+      </div>
+      <div class="tl-cite">Task metadata stores construct mapping and scoring rubric. Supports both scored (expert-ranked reference) and qualitative outcomes.</div>
+      <div class="tl-actions">
+        <a href="/pure-ai" class="tl-btn">Use in Pure AI Study</a>
+        <a href="/hitl" class="tl-btn">Use in HITL Study</a>
+      </div>
+    </div>
+
+    <!-- Idea Generation + Evaluation -->
+    <div class="tl-card">
+      <div class="tl-kicker">Creativity &amp; innovation</div>
+      <h3>Idea Generation + Evaluation</h3>
+      <p>Separate divergence and convergence phases to study how team structure shapes novelty, participation, and selection.</p>
+      <div class="tl-meta">
+        <span class="tl-chip">Creativity</span>
+        <span class="tl-chip">Mutual adjustment</span>
+        <span class="tl-chip">Process trace</span>
+      </div>
+      <div class="tl-cite">Configurable rubric and phase structure. Divergence phase captures unique ideas; convergence phase evaluates and selects. Suitable for brainstorming and innovation research.</div>
+      <div class="tl-actions">
+        <a href="/pure-ai" class="tl-btn">Use in Pure AI Study</a>
+        <a href="/hitl" class="tl-btn">Use in HITL Study</a>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Custom Task Banner -->
+  <div class="custom-banner">
+    <div>
+      <h3>Custom Task</h3>
+      <p>Bring your own task prompt, instructions, scenario, and optional scoring guidance. Available in both the Pure AI and Human-in-the-Loop builders. Mark as scored if a correct answer exists, or unscored for qualitative analysis.</p>
+    </div>
+    <div class="actions">
+      <a href="/pure-ai" class="tl-btn primary">Configure in Pure AI Builder</a>
+      <a href="/hitl" class="tl-btn">Configure in HITL Builder</a>
+    </div>
+  </div>
+
 </div>
-
-<div class="task-lib-grid">
-
-  <!-- Lost at Sea -->
-  <div class="task-lib-card">
-    <div style="display:flex; align-items:center; gap:0.75rem; margin-bottom:0.5rem;">
-      <div class="task-lib-title">Lost at Sea</div>
-      <span class="task-scored-badge scored">Scored</span>
-    </div>
-    <p class="task-lib-desc">A survival ranking task in which agents prioritize 15 items after a shipwreck in the Atlantic Ocean. The team's ranking is scored against expert rankings from the US Coast Guard. Based on a widely used team-decision exercise adapted for multi-agent research.</p>
-    <div class="task-lib-actions">
-      <a href="/pure-ai" class="button secondary" style="font-size:0.8rem; padding:0.4rem 0.9rem;">Use in Pure AI Study</a>
-      <a href="/hitl" class="button secondary" style="font-size:0.8rem; padding:0.4rem 0.9rem;">Use in HITL Study</a>
-    </div>
-  </div>
-
-  <!-- Hiring Decision -->
-  <div class="task-lib-card">
-    <div style="display:flex; align-items:center; gap:0.75rem; margin-bottom:0.5rem;">
-      <div class="task-lib-title">Hiring Decision</div>
-      <span class="task-scored-badge unscored">Unscored</span>
-    </div>
-    <p class="task-lib-desc">Agents evaluate two job candidates across technical skill, leadership potential, and culture fit and produce a hiring recommendation. No ground-truth scoring; outcomes are analyzed qualitatively. Well-suited for studying deliberation, preference aggregation, and group bias.</p>
-    <div class="task-lib-actions">
-      <a href="/pure-ai" class="button secondary" style="font-size:0.8rem; padding:0.4rem 0.9rem;">Use in Pure AI Study</a>
-      <a href="/hitl" class="button secondary" style="font-size:0.8rem; padding:0.4rem 0.9rem;">Use in HITL Study</a>
-    </div>
-  </div>
-
-  <!-- Desert Survival -->
-  <div class="task-lib-card">
-    <div style="display:flex; align-items:center; gap:0.75rem; margin-bottom:0.5rem;">
-      <div class="task-lib-title">Desert Survival</div>
-      <span class="task-scored-badge scored">Scored</span>
-    </div>
-    <p class="task-lib-desc">Agents rank items for surviving a crash landing in the Sonoran desert. The team's ranking is scored against expert wilderness survival rankings. Adapted from a classic outdoor survival exercise widely used in team research.</p>
-    <div class="task-lib-actions">
-      <a href="/pure-ai" class="button secondary" style="font-size:0.8rem; padding:0.4rem 0.9rem;">Use in Pure AI Study</a>
-      <a href="/hitl" class="button secondary" style="font-size:0.8rem; padding:0.4rem 0.9rem;">Use in HITL Study</a>
-    </div>
-  </div>
-
-  <!-- Moon Landing -->
-  <div class="task-lib-card">
-    <div style="display:flex; align-items:center; gap:0.75rem; margin-bottom:0.5rem;">
-      <div class="task-lib-title">Moon Landing</div>
-      <span class="task-scored-badge scored">Scored</span>
-    </div>
-    <p class="task-lib-desc">Agents rank 15 items needed for a 200-mile trek to reach the mother ship on the lunar surface. The team's ranking is scored against NASA expert rankings. Based on the NASA Moon Survival Task, a classic instrument in team-performance research.</p>
-    <div class="task-lib-actions">
-      <a href="/pure-ai" class="button secondary" style="font-size:0.8rem; padding:0.4rem 0.9rem;">Use in Pure AI Study</a>
-      <a href="/hitl" class="button secondary" style="font-size:0.8rem; padding:0.4rem 0.9rem;">Use in HITL Study</a>
-    </div>
-  </div>
-
-  <!-- Ethical Dilemma -->
-  <div class="task-lib-card">
-    <div style="display:flex; align-items:center; gap:0.75rem; margin-bottom:0.5rem;">
-      <div class="task-lib-title">Ethical Dilemma</div>
-      <span class="task-scored-badge unscored">Unscored</span>
-    </div>
-    <p class="task-lib-desc">Agents debate a morally complex scenario using competing ethical frameworks — utilitarian, deontological, and virtue ethics — and reach a defensible recommendation. Qualitative outcome only. Suitable for studying argumentation, perspective-taking, and convergence under value conflict.</p>
-    <div class="task-lib-actions">
-      <a href="/pure-ai" class="button secondary" style="font-size:0.8rem; padding:0.4rem 0.9rem;">Use in Pure AI Study</a>
-      <a href="/hitl" class="button secondary" style="font-size:0.8rem; padding:0.4rem 0.9rem;">Use in HITL Study</a>
-    </div>
-  </div>
-
-</div>
-
-<!-- Custom Task section -->
-<div class="cap-section" style="margin-top:1.25rem;">
-  <h2>Custom Task</h2>
-  <p>Define your own task by providing a prompt. Scored or unscored. Available in both Pure AI and HITL builders.</p>
-  <p style="margin-bottom:0.5rem;">In either builder, select <strong>Custom Task…</strong> from the task dropdown (Step 1). Enter your instructions in the prompt field that appears. If your task has a ground-truth answer, mark it as scored — the platform will capture numeric output and compute agreement statistics. If outcomes are qualitative, mark it unscored to disable scoring.</p>
-  <div style="margin-top:1rem; display:flex; gap:0.75rem; flex-wrap:wrap;">
-    <a href="/pure-ai" class="button secondary" style="font-size:0.85rem;">Configure in Pure AI Builder</a>
-    <a href="/hitl" class="button secondary" style="font-size:0.85rem;">Configure in HITL Builder</a>
-  </div>
-</div>
-
 {% endblock %}

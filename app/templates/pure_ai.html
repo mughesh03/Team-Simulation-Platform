@@ -1,318 +1,1013 @@
 {% extends "base.html" %}
-
 {% block title %}Pure AI Team Study Builder{% endblock %}
 
-{% block content %}
+{% block extra_head %}
+<style>
+  /* ── Reset main padding for this page ── */
+  main { padding: 0 !important; }
 
-<div class="builder-header">
-  <h1>Pure AI Team Study Builder</h1>
-  <p class="hint">Configure and launch a batch of AI-only team simulations for your research study.</p>
+  /* ── Page variables ── */
+  :root {
+    --p-bg: #f6f7fb;
+    --p-panel: #ffffff;
+    --p-ink: #18202a;
+    --p-muted: #667085;
+    --p-line: #e5e7eb;
+    --p-navy: #1f2a44;
+    --p-blue: #3454d1;
+    --p-blue2: #eef2ff;
+    --p-green: #2f7d59;
+    --p-green2: #edf8f2;
+    --p-orange: #b85c1e;
+    --p-shadow: 0 4px 20px rgba(31,42,68,.07);
+  }
+
+  /* ── Page Shell ── */
+  .pb-shell {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  /* ── Hero ── */
+  .pb-hero {
+    padding: 24px 32px;
+    background: var(--p-panel);
+    border-radius: 20px;
+    box-shadow: var(--p-shadow);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 16px;
+    border: 1px solid var(--p-line);
+  }
+  .pb-hero-tag { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; font-weight: 700; color: var(--p-blue); margin-bottom: 6px; }
+  .pb-hero h1 { font-size: 26px; font-weight: 700; color: var(--p-navy); margin: 0 0 6px; }
+  .pb-hero p  { font-size: 13px; color: var(--p-muted); margin: 0; max-width: 680px; line-height: 1.5; }
+  .pb-badge {
+    font-size: 11px; font-weight: 700; color: var(--p-blue);
+    background: var(--p-blue2); border: 1px solid #dce3ff;
+    padding: 6px 11px; border-radius: 999px; white-space: nowrap;
+  }
+
+  /* ── Layout: sidebar + work ── */
+  .pb-layout {
+    display: grid;
+    grid-template-columns: 240px minmax(0, 1fr);
+    gap: 24px;
+    align-items: start;
+  }
+
+  /* ── Sidebar (steps) ── */
+  .pb-steps {
+    padding: 16px;
+    position: sticky;
+    top: 85px;
+    max-height: calc(100vh - 100px);
+    overflow-y: auto;
+    background: var(--p-panel);
+    border-radius: 20px;
+    box-shadow: var(--p-shadow);
+    border: 1px solid var(--p-line);
+  }
+  .pb-step {
+    display: flex; gap: 10px; padding: 10px 9px;
+    border-radius: 10px; cursor: pointer; align-items: flex-start;
+    transition: background .12s;
+  }
+  .pb-step:hover { background: #f8fafc; }
+  .pb-step.active { background: var(--p-blue2); }
+  .pb-step.done .pb-num { background: var(--p-green); color: #fff; }
+  .pb-num {
+    width: 26px; height: 26px; border-radius: 8px; flex: 0 0 auto;
+    display: flex; align-items: center; justify-content: center;
+    background: #f2f4f7; color: var(--p-muted); font-size: 12px; font-weight: 700;
+  }
+  .pb-step.active .pb-num { background: var(--p-blue); color: #fff; }
+  .pb-step strong { font-size: 13px; color: var(--p-navy); display: block; font-weight: 600; }
+  .pb-step span   { font-size: 11px; color: var(--p-muted); display: block; margin-top: 2px; line-height: 1.3; }
+
+  /* ── Work area ── */
+  .pb-work {
+    padding: 32px 36px 48px;
+    background: var(--p-panel);
+    border-radius: 20px;
+    box-shadow: var(--p-shadow);
+    border: 1px solid var(--p-line);
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  /* ── Section head ── */
+  .pb-section-head {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    gap: 12px; margin-bottom: 20px;
+  }
+  .pb-section-head h2 { margin: 0; color: var(--p-navy); font-size: 22px; font-weight: 700; }
+  .pb-section-head p  { margin: 5px 0 0; color: var(--p-muted); font-size: 13px; max-width: 620px; line-height: 1.45; }
+
+  /* ── Fields ── */
+  .pb-field { margin-bottom: 14px; }
+  .pb-field label { display: block; font-size: 12px; font-weight: 600; color: #344054; margin-bottom: 6px; }
+  .pb-field label .fw { font-weight: 400; color: var(--p-muted); }
+  .pb-field input,
+  .pb-field select,
+  .pb-field textarea {
+    width: 100%; border: 1px solid #d0d5dd; border-radius: 10px;
+    background: #fff; padding: 10px 11px; color: var(--p-ink);
+    font: inherit; outline: none; box-sizing: border-box;
+  }
+  .pb-field textarea { min-height: 86px; resize: vertical; }
+  .pb-field input:focus,
+  .pb-field select:focus,
+  .pb-field textarea:focus {
+    border-color: #8ea2ff; box-shadow: 0 0 0 3px rgba(52,84,209,.08);
+  }
+  .pb-field .pb-note { font-size: 11px; color: var(--p-muted); margin-top: 5px; line-height: 1.4; }
+  .pb-fieldrow { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .pb-readonly { background: #f8fafc !important; color: #667085 !important; }
+
+  /* ── Cards (structure / task) ── */
+  .pb-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .pb-card {
+    border: 1px solid var(--p-line); border-radius: 14px; padding: 14px;
+    background: #fff; cursor: pointer; transition: .15s; position: relative;
+  }
+  .pb-card:hover { transform: translateY(-1px); border-color: #c9d3ff; }
+  .pb-card.selected {
+    border: 2px solid var(--p-blue); padding: 13px;
+    background: #fbfcff; box-shadow: 0 6px 20px rgba(52,84,209,.09);
+  }
+  .pb-card h3 { margin: 0 0 5px; font-size: 15px; color: var(--p-navy); font-weight: 600; }
+  .pb-card p  { margin: 0; color: var(--p-muted); font-size: 12px; line-height: 1.4; }
+  .pb-check {
+    position: absolute; right: 10px; top: 10px; width: 20px; height: 20px;
+    border-radius: 50%; background: var(--p-blue); color: #fff;
+    display: none; align-items: center; justify-content: center; font-size: 12px; font-weight: 700;
+  }
+  .pb-card.selected .pb-check { display: flex; }
+  .pb-kicker {
+    font-size: 10px; font-weight: 700; color: #6d4aff;
+    text-transform: uppercase; letter-spacing: .07em; margin-bottom: 6px;
+  }
+  .pb-cite { font-size: 10px; color: #667085; margin-top: 9px; border-top: 1px solid #eef1f4; padding-top: 8px; }
+
+  /* ── Diagram ── */
+  .pb-diagram {
+    height: 84px; background: #f8fafc; border: 1px dashed #d7dde8;
+    border-radius: 10px; margin: 10px 0 11px;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--p-navy); font-size: 13px; font-weight: 600; gap: 6px;
+  }
+  .pb-node {
+    width: 28px; height: 28px; border-radius: 9px; background: #fff;
+    border: 1px solid #cfd6e4; display: inline-flex; align-items: center;
+    justify-content: center; box-shadow: 0 2px 8px rgba(31,42,68,.06); font-size: 12px; font-weight: 600;
+  }
+  .pb-arrow { padding: 0 6px; color: #7a8699; font-size: 16px; }
+
+  /* ── Meta chips ── */
+  .pb-meta { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .pb-chip { font-size: 10px; color: #475467; background: #f2f4f7; border-radius: 999px; padding: 5px 8px; }
+
+  /* ── Subhead divider ── */
+  .pb-subhead {
+    font-size: 13px; color: var(--p-navy); font-weight: 700;
+    margin: 18px 0 9px; display: flex; align-items: center; gap: 8px;
+  }
+  .pb-subhead::after { content: ""; height: 1px; background: var(--p-line); flex: 1; }
+  .pb-hint { font-size: 11px; color: var(--p-muted); line-height: 1.45; margin: -3px 0 12px; }
+
+  /* ── Agent cards ── */
+  .pb-agent-list { display: grid; gap: 10px; margin-top: 10px; }
+  .pb-agent-card { border: 1px solid var(--p-line); border-radius: 12px; padding: 12px; background: #fafbfc; }
+  .pb-agent-card h4 { font-size: 12px; margin: 0 0 8px; color: var(--p-navy); font-weight: 600; }
+
+  /* ── Toggle-card ── */
+  .pb-toggle-row { display: flex; gap: 10px; flex-wrap: wrap; }
+  .pb-toggle-card {
+    display: flex; align-items: flex-start; gap: 8px;
+    border: 1px solid var(--p-line); border-radius: 11px; padding: 11px 12px;
+    background: #fff; flex: 1; min-width: 165px; cursor: pointer;
+  }
+  .pb-toggle-card input { margin-top: 2px; flex-shrink: 0; }
+  .pb-toggle-card b  { display: block; font-size: 12px; color: var(--p-navy); font-weight: 600; }
+  .pb-toggle-card span { display: block; font-size: 10px; color: var(--p-muted); margin-top: 3px; line-height: 1.35; }
+
+  /* ── Simulation matrix ── */
+  .pb-matrix {
+    width: 100%; border-collapse: separate; border-spacing: 0;
+    margin-top: 10px; font-size: 12px;
+  }
+  .pb-matrix th, .pb-matrix td {
+    border-right: 1px solid var(--p-line); border-bottom: 1px solid var(--p-line);
+    padding: 9px 10px; text-align: left;
+  }
+  .pb-matrix th:first-child, .pb-matrix td:first-child { border-left: 1px solid var(--p-line); }
+  .pb-matrix tr:first-child th { border-top: 1px solid var(--p-line); }
+  .pb-matrix th:first-child { border-top-left-radius: 10px; }
+  .pb-matrix th:last-child  { border-top-right-radius: 10px; }
+  .pb-matrix tr:last-child td:first-child { border-bottom-left-radius: 10px; }
+  .pb-matrix tr:last-child td:last-child  { border-bottom-right-radius: 10px; }
+  .pb-matrix th { background: #f8fafc; color: #475467; font-size: 11px; font-weight: 600; }
+
+  /* ── LLM ── */
+  .pb-llm-box { border: 1px solid var(--p-line); border-radius: 12px; padding: 13px; margin-bottom: 12px; background: #fafbfc; }
+  .pb-llm-agent { display: grid; grid-template-columns: 80px 1fr 1fr; gap: 8px; align-items: end; border-bottom: 1px solid var(--p-line); padding: 9px 0; }
+  .pb-llm-agent:last-child { border-bottom: 0; }
+  .pb-llm-agent b { font-size: 11px; color: var(--p-navy); padding-bottom: 11px; font-weight: 600; }
+  .pb-mini-field label { display: block; font-size: 10px; color: var(--p-muted); font-weight: 700; margin-bottom: 4px; }
+  .pb-mini-field select { width: 100%; border: 1px solid #d0d5dd; border-radius: 9px; padding: 9px; background: white; font: inherit; }
+  .pb-mock-callout {
+    display: flex; justify-content: space-between; align-items: center; gap: 12px;
+    padding: 11px 12px; border: 1px solid #d7efe1; background: var(--p-green2);
+    border-radius: 10px; margin-bottom: 14px;
+  }
+  .pb-mock-callout div { font-size: 11px; color: #32654c; line-height: 1.4; }
+  .pb-advanced { margin-top: 13px; border: 1px solid var(--p-line); border-radius: 10px; overflow: hidden; }
+  .pb-advanced summary { cursor: pointer; padding: 10px 11px; font-size: 11px; font-weight: 700; color: #475467; background: #fafbfc; }
+  .pb-advanced .inside { padding: 12px 11px; }
+
+  /* ── Protocol/Review ── */
+  .pb-protocol { border: 1px solid var(--p-line); border-radius: 12px; padding: 14px; background: #fff; }
+  .pb-protocol h4 { margin: 0 0 12px; color: var(--p-navy); font-size: 15px; font-weight: 700; }
+  .pb-code {
+    white-space: pre-wrap; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 10px; line-height: 1.5; background: #101828; color: #e4e7ec;
+    border-radius: 10px; padding: 12px; max-height: 300px; overflow: auto;
+  }
+  .pb-audit { margin-top: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .pb-audit div {
+    font-size: 10px; background: var(--p-green2); color: var(--p-green);
+    padding: 6px 8px; border-radius: 7px; border: 1px solid #d7efe1; font-weight: 600;
+  }
+
+  /* ── Nav buttons ── */
+  .pb-buttons {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--p-line); gap: 10px;
+  }
+  .pb-btn {
+    border: 1px solid #d0d5dd; background: white; color: #344054;
+    padding: 10px 15px; border-radius: 10px; font-weight: 600; font-size: 12px;
+    cursor: pointer; font: inherit; transition: .12s;
+  }
+  .pb-btn:hover:not(:disabled) { background: #f8fafc; }
+  .pb-btn:disabled { opacity: .4; cursor: not-allowed; }
+  .pb-btn.primary { background: var(--p-blue); color: #fff; border-color: var(--p-blue); }
+  .pb-btn.primary:hover:not(:disabled) { background: #2646c0; }
+  .pb-btn.ghost  { border-color: transparent; background: #f8fafc; }
+  .pb-btn.small  { padding: 6px 9px; font-size: 11px; border-radius: 8px; }
+
+  /* ── Progress card ── */
+  .pb-progress-card {
+    margin: 16px 28px; background: #fff; border: 1px solid var(--p-line);
+    border-radius: 14px; padding: 20px 22px; box-shadow: var(--p-shadow);
+  }
+  .pb-progress-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+  .pb-progress-bar-track { background: #e5e7eb; border-radius: 999px; height: 8px; width: 100%; }
+  .pb-progress-bar-fill  { background: var(--p-blue); border-radius: 999px; height: 8px; width: 0%; transition: width .3s; }
+  .pb-status { display: inline-flex; align-items: center; padding: 4px 9px; border-radius: 999px; background: #f2f4f7; color: #475467; font-size: 11px; font-weight: 600; }
+  .pb-status.running { background: #dcfce7; color: #166534; }
+  .pb-status.done    { background: #dbeafe; color: #1d4ed8; }
+  .pb-status.error   { background: #fee2e2; color: #991b1b; }
+
+  @media (max-width: 900px) {
+    .pb-layout { grid-template-columns: 1fr; }
+    .pb-steps  { position: static; height: auto; border-right: none; border-bottom: 1px solid var(--p-line); display: flex; flex-wrap: wrap; gap: 4px; padding: 10px; }
+    .pb-step   { flex: 1; min-width: 120px; }
+    .pb-cards, .pb-fieldrow { grid-template-columns: 1fr; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pb-shell">
+
+<!-- ── Hero ──────────────────────────────────────────────────────── -->
+<div class="pb-hero">
+  <div>
+    <div class="pb-hero-tag">Pure AI Team Builder</div>
+    <h1>Configure a Pure AI team study</h1>
+    <p>Configure the research design, team, simulation, and LLM settings before launching a batch of AI-only team simulations.</p>
+  </div>
+  <span class="pb-badge">Pure AI Team</span>
 </div>
 
-<form id="pureAiForm">
+<!-- ── 2-column layout ───────────────────────────────────────────── -->
+<div class="pb-layout">
 
-  <!-- ══════════════════════════════════════════════════════════════
-       Step 1 — Study Task
-  ══════════════════════════════════════════════════════════════ -->
-  <div class="builder-section">
-    <div class="step-label">
-      Step 1 — Study Task
-      <svg onclick="showInfoModal('task')" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="cursor:pointer;vertical-align:middle;margin-left:0.4rem;opacity:0.6;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.6'"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
-    </div>
-    <h2>Study Task</h2>
-    <label>Select Task
-      <select id="taskType">
-        <option value="lost_at_sea">Lost at Sea (Scored)</option>
-        <option value="hiring">Hiring Decision (Unscored)</option>
-        <option value="desert_survival">Desert Survival (Scored)</option>
-        <option value="moon_landing">Moon Landing (Scored)</option>
-        <option value="ethical_dilemma">Ethical Dilemma (Unscored)</option>
-        <option value="custom">Custom Task…</option>
-      </select>
-    </label>
-    <div class="task-desc-hint" id="taskDescHint" style="margin-top:0.5rem;"></div>
+  <!-- Sidebar steps -->
+  <aside class="pb-steps" id="pbSteps"></aside>
 
-    <div id="customTaskGroup" style="display:none;" class="mt-2">
-      <label>Custom Task Prompt
-        <textarea id="customPrompt" rows="4" placeholder="Enter task instructions for the entire team..."></textarea>
-      </label>
-    </div>
-    <label id="isScoredGroup" style="display:none; margin-top:1rem;">Is this task scored?
-      <select id="isScored">
-        <option value="true">Yes — compare against a ground-truth answer</option>
-        <option value="false">No — qualitative evaluation only</option>
-      </select>
-    </label>
-  </div>
+  <!-- Work area -->
+  <div>
+    <div class="pb-work" id="pbWork"></div>
 
-  <!-- ══════════════════════════════════════════════════════════════
-       Step 2 — Team Structure (Interdependence)
-  ══════════════════════════════════════════════════════════════ -->
-  <div class="builder-section">
-    <div class="step-label">
-      Step 2 — Team Structure (Interdependence)
-      <svg onclick="showInfoModal('structure')" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="cursor:pointer;vertical-align:middle;margin-left:0.4rem;opacity:0.6;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.6'"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
-    </div>
-    <h2>Team Structure</h2>
-
-    <!-- Hidden select keeps existing JS working -->
-    <select id="teamStructure" style="display:none;">
-      <option value="pooled">Pooled</option>
-      <option value="sequential">Sequential</option>
-      <option value="reciprocal">Reciprocal</option>
-      <option value="team" selected>Team</option>
-    </select>
-
-    <div class="structure-selector">
-
-      <!-- Pooled -->
-      <div class="struct-card" data-value="pooled" onclick="selectStructure('pooled')">
-        <div class="struct-diagram">
-          <svg viewBox="0 0 80 52" width="80" height="52" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="12" cy="14" r="9" stroke="#232D4B" stroke-width="1.5"/>
-            <text x="12" y="18" text-anchor="middle" font-size="8" fill="#232D4B" font-family="sans-serif">A</text>
-            <circle cx="40" cy="14" r="9" stroke="#232D4B" stroke-width="1.5"/>
-            <text x="40" y="18" text-anchor="middle" font-size="8" fill="#232D4B" font-family="sans-serif">B</text>
-            <circle cx="68" cy="14" r="9" stroke="#232D4B" stroke-width="1.5"/>
-            <text x="68" y="18" text-anchor="middle" font-size="8" fill="#232D4B" font-family="sans-serif">C</text>
-            <line x1="12" y1="23" x2="12" y2="33" stroke="#9ba8c0" stroke-width="1.2"/>
-            <line x1="40" y1="23" x2="40" y2="33" stroke="#9ba8c0" stroke-width="1.2"/>
-            <line x1="68" y1="23" x2="68" y2="33" stroke="#9ba8c0" stroke-width="1.2"/>
-            <rect x="4" y="33" width="72" height="14" rx="3" stroke="#9ba8c0" stroke-width="1.2"/>
-          </svg>
+    <!-- Progress card (hidden until experiment starts) -->
+    <div class="pb-progress-card" id="pbProgressCard" style="display:none;">
+      <div class="pb-progress-head">
+        <h3 style="margin:0; font-size:16px; color:var(--p-navy);">Simulation Progress</h3>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <button class="pb-btn small danger" id="pbStopBtn" style="display:none;" onclick="pbStopExperiment()">Stop</button>
+          <span class="pb-status running" id="pbStatusBadge">RUNNING</span>
         </div>
-        <div class="struct-name">Pooled</div>
-        <div class="struct-desc">Independent work, aggregated at the end</div>
       </div>
-
-      <!-- Sequential -->
-      <div class="struct-card" data-value="sequential" onclick="selectStructure('sequential')">
-        <div class="struct-diagram">
-          <svg viewBox="0 0 80 32" width="80" height="32" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="12" cy="16" r="9" stroke="#232D4B" stroke-width="1.5"/>
-            <text x="12" y="20" text-anchor="middle" font-size="8" fill="#232D4B" font-family="sans-serif">A</text>
-            <circle cx="40" cy="16" r="9" stroke="#232D4B" stroke-width="1.5"/>
-            <text x="40" y="20" text-anchor="middle" font-size="8" fill="#232D4B" font-family="sans-serif">B</text>
-            <circle cx="68" cy="16" r="9" stroke="#232D4B" stroke-width="1.5"/>
-            <text x="68" y="20" text-anchor="middle" font-size="8" fill="#232D4B" font-family="sans-serif">C</text>
-            <line x1="22" y1="16" x2="28" y2="16" stroke="#9ba8c0" stroke-width="1.2"/>
-            <polygon points="28,12.5 32,16 28,19.5" fill="#9ba8c0"/>
-            <line x1="50" y1="16" x2="56" y2="16" stroke="#9ba8c0" stroke-width="1.2"/>
-            <polygon points="56,12.5 60,16 56,19.5" fill="#9ba8c0"/>
-          </svg>
-        </div>
-        <div class="struct-name">Sequential</div>
-        <div class="struct-desc">Agents pass work to the next in line</div>
+      <div style="display:flex; justify-content:space-between; font-size:12px; font-weight:600; margin-bottom:6px;">
+        <span id="pbProgressText">0 / 0 completed</span>
+        <span id="pbProgressPct">0%</span>
       </div>
-
-      <!-- Reciprocal -->
-      <div class="struct-card" data-value="reciprocal" onclick="selectStructure('reciprocal')">
-        <div class="struct-diagram">
-          <svg viewBox="0 0 80 55" width="80" height="55" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="14" cy="16" r="9" stroke="#232D4B" stroke-width="1.5"/>
-            <text x="14" y="20" text-anchor="middle" font-size="8" fill="#232D4B" font-family="sans-serif">A</text>
-            <circle cx="14" cy="41" r="9" stroke="#232D4B" stroke-width="1.5"/>
-            <text x="14" y="45" text-anchor="middle" font-size="8" fill="#232D4B" font-family="sans-serif">B</text>
-            <circle cx="66" cy="16" r="9" stroke="#232D4B" stroke-width="1.5"/>
-            <text x="66" y="20" text-anchor="middle" font-size="8" fill="#232D4B" font-family="sans-serif">C</text>
-            <circle cx="66" cy="41" r="9" stroke="#232D4B" stroke-width="1.5"/>
-            <text x="66" y="45" text-anchor="middle" font-size="8" fill="#232D4B" font-family="sans-serif">D</text>
-            <!-- arrow right (upper) -->
-            <line x1="24" y1="25" x2="54" y2="30" stroke="#9ba8c0" stroke-width="1.2"/>
-            <polygon points="51,26.5 55,30 51,33.5" fill="#9ba8c0"/>
-            <!-- arrow left (lower) -->
-            <line x1="56" y1="31" x2="26" y2="36" stroke="#9ba8c0" stroke-width="1.2"/>
-            <polygon points="29,32.5 25,36 29,39.5" fill="#9ba8c0"/>
-          </svg>
-        </div>
-        <div class="struct-name">Reciprocal</div>
-        <div class="struct-desc">Iterative back-and-forth between subgroups</div>
-      </div>
-
-      <!-- Team (default selected) -->
-      <div class="struct-card selected" data-value="team" onclick="selectStructure('team')">
-        <div class="struct-diagram">
-          <svg viewBox="0 0 80 65" width="80" height="65" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="40" cy="12" r="9" stroke="#232D4B" stroke-width="1.5"/>
-            <text x="40" y="16" text-anchor="middle" font-size="8" fill="#232D4B" font-family="sans-serif">A</text>
-            <circle cx="14" cy="53" r="9" stroke="#232D4B" stroke-width="1.5"/>
-            <text x="14" y="57" text-anchor="middle" font-size="8" fill="#232D4B" font-family="sans-serif">B</text>
-            <circle cx="66" cy="53" r="9" stroke="#232D4B" stroke-width="1.5"/>
-            <text x="66" y="57" text-anchor="middle" font-size="8" fill="#232D4B" font-family="sans-serif">C</text>
-            <line x1="32" y1="20" x2="20" y2="45" stroke="#9ba8c0" stroke-width="1.2"/>
-            <line x1="48" y1="20" x2="60" y2="45" stroke="#9ba8c0" stroke-width="1.2"/>
-            <line x1="23" y1="53" x2="57" y2="53" stroke="#9ba8c0" stroke-width="1.2"/>
-          </svg>
-        </div>
-        <div class="struct-name">Team</div>
-        <div class="struct-desc">Simultaneous group discussion (round-robin)</div>
-      </div>
-
-    </div>
-  </div>
-
-  <!-- ══════════════════════════════════════════════════════════════
-       Step 3 — Team Composition
-  ══════════════════════════════════════════════════════════════ -->
-  <div class="builder-section">
-    <div class="step-label">Step 3 — Team Composition</div>
-    <h2>Team Composition</h2>
-    <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:1.25rem;">
-      <label>Number of Agents
-        <input type="number" id="numAgents" value="3" min="1" max="12">
-      </label>
-      <label>Discussion Rounds
-        <input type="number" id="numRounds" value="6" min="1" max="50">
-      </label>
-    </div>
-    <label style="display:block; font-size:0.9rem; font-weight:500; margin-bottom:0.5rem; margin-top:0;">Composition</label>
-    <div class="comp-toggle">
-      <button type="button" class="comp-opt active" data-value="homogeneous">Homogeneous</button>
-      <button type="button" class="comp-opt" data-value="heterogeneous">Heterogeneous</button>
-    </div>
-    <div id="compHint" class="task-desc-hint" style="margin-top:0.25rem;">All agents receive the same task prompt and participate equally.</div>
-    <div id="compHintHetero" class="task-desc-hint" style="display:none; margin-top:0.25rem;">Enter a context or instruction for each agent below. This can include a role, expertise, information asymmetry, or any constraint.</div>
-    <div id="perAgentConfigContainer" style="display:none; margin-top:1rem;">
-      <!-- Dynamically populated by JS -->
-    </div>
-  </div>
-
-  <!-- ══════════════════════════════════════════════════════════════
-       Step 4 — Simulation Settings
-  ══════════════════════════════════════════════════════════════ -->
-  <div class="builder-section">
-    <div class="step-label">Step 4 — Simulation Settings</div>
-    <h2>Simulation Settings</h2>
-    <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
-      <label>Replications <span class="hint">How many times to repeat the simulation</span>
-        <input type="number" id="numSimulations" value="20" min="1" max="1000">
-      </label>
-      <label>Concurrency Limit <span class="hint">Parallel simulations</span>
-        <input type="number" id="concurrency" value="5" min="1" max="50">
-      </label>
-      <label>Random Seed <span class="hint">For reproducibility (optional)</span>
-        <input type="number" id="seed" placeholder="e.g. 42">
-      </label>
-      <label>Experiment Label <span class="hint">Optional identifier</span>
-        <input type="text" id="experimentLabel" placeholder="e.g. pilot_study_v2">
-      </label>
-    </div>
-    <label style="margin-top:1rem; display:block;">Researcher Notes <span class="hint">Saved with experiment metadata</span>
-      <textarea id="researcherNotes" rows="2" placeholder="Internal notes about this experiment run..."></textarea>
-    </label>
-  </div>
-
-  <!-- ══════════════════════════════════════════════════════════════
-       Step 5 — LLM Configuration
-  ══════════════════════════════════════════════════════════════ -->
-  <div class="builder-section">
-    <div class="step-label">Step 5 — LLM Configuration</div>
-    <h2>LLM Configuration</h2>
-    <div class="task-desc-hint" style="margin-bottom:1.25rem;">API keys are not used yet. Leave the key blank and launch — the study runs on the working mock demo backend.</div>
-
-    <!-- Multi-LLM toggle -->
-    <div class="toggle-banner" id="multiLlmBanner">
-      <label class="toggle-label">
-        <input type="checkbox" id="multiLlmToggle">
-        <span class="toggle-switch"></span>
-        <span><strong>Enable Multi-LLM Team</strong></span>
-      </label>
-      <span class="toggle-hint">Assign different models to different agents</span>
-    </div>
-
-    <!-- Single-LLM mode -->
-    <div id="singleLlmGroup">
-      <label>Provider Model
-        <select id="modelName">
-          <option value="kimi-k2.5">Kimi K2.5 (UVA RC GenAI)</option>
-          <option value="gpt-4o">OpenAI GPT-4o</option>
-          <option value="gpt-4-turbo">OpenAI GPT-4 Turbo</option>
-          <option value="gpt-3.5-turbo">OpenAI GPT-3.5 Turbo</option>
-          <option value="claude-3.5-sonnet">Anthropic Claude 3.5 Sonnet</option>
-          <option value="claude-3-opus">Anthropic Claude 3 Opus</option>
-          <option value="gemini-2.5-pro">Google Gemini 2.5 Pro</option>
-          <option value="llama-3.1-70b">Meta Llama 3.1 70B</option>
-          <option value="mock" selected>Mock Backend (Fast Testing)</option>
-        </select>
-      </label>
-      <label>API Key <span class="hint">Leave blank. Private keys are not wired yet; the demo backend always runs.</span>
-        <input type="password" id="apiKey" placeholder="Not required for the demo">
-      </label>
-    </div>
-
-    <!-- Multi-LLM mode -->
-    <div id="multiLlmGroup" style="display:none;">
-      <label style="font-weight:600; margin-bottom:0.25rem; display:block;">Select Models for Your Team:</label>
-      <p class="hint" style="margin:0 0 0.75rem;">Check all the LLMs you want agents to use. A separate custom prompt will appear for each.</p>
-      <div class="checkbox-grid">
-        <label class="checkbox-item"><input type="checkbox" class="llm-checkbox" value="kimi-k2.5"> Kimi K2.5 (UVA RC GenAI)</label>
-        <label class="checkbox-item"><input type="checkbox" class="llm-checkbox" value="gpt-4o"> OpenAI GPT-4o</label>
-        <label class="checkbox-item"><input type="checkbox" class="llm-checkbox" value="gpt-4-turbo"> OpenAI GPT-4 Turbo</label>
-        <label class="checkbox-item"><input type="checkbox" class="llm-checkbox" value="gpt-3.5-turbo"> OpenAI GPT-3.5 Turbo</label>
-        <label class="checkbox-item"><input type="checkbox" class="llm-checkbox" value="claude-3.5-sonnet"> Claude 3.5 Sonnet</label>
-        <label class="checkbox-item"><input type="checkbox" class="llm-checkbox" value="claude-3-opus"> Claude 3 Opus</label>
-        <label class="checkbox-item"><input type="checkbox" class="llm-checkbox" value="gemini-2.5-pro"> Gemini 2.5 Pro</label>
-        <label class="checkbox-item"><input type="checkbox" class="llm-checkbox" value="llama-3.1-70b"> Llama 3.1 70B</label>
-        <label class="checkbox-item"><input type="checkbox" class="llm-checkbox" value="mock"> Mock Backend</label>
-      </div>
-      <label class="mt-4">API Key <span class="hint">Shared; leave blank to use UVARC_GenAI_API from .env</span>
-        <input type="password" id="multiApiKey" placeholder="UVA RC GenAI API key">
-      </label>
-      <!-- Per-model task prompts (populated by initMultiLlm) -->
-      <div id="perLlmTaskSection" style="display:none;" class="mt-4">
-        <div class="section-divider"></div>
-        <h3 class="section-accent-title">📋 Per-Model Custom Prompts</h3>
-        <p class="hint" style="margin-bottom:1rem;">Each selected LLM gets its own dedicated prompt. Define the specific role, task, or behavior for each model below.</p>
-        <div id="perLlmInputsContainer"></div>
+      <div class="pb-progress-bar-track"><div class="pb-progress-bar-fill" id="pbProgressFill"></div></div>
+      <p id="pbErrorText" style="display:none; color:#dc2626; font-size:12px; white-space:pre-wrap; margin-top:12px;"></p>
+      <div id="pbResultsActions" style="display:none; text-align:right; margin-top:12px;">
+        <a class="pb-btn primary" id="pbDashboardLink" href="#">View Results Dashboard</a>
       </div>
     </div>
   </div>
 
-  <!-- ── Launch Bar ─────────────────────────────────────────────── -->
-  <div class="launch-bar-new">
-    <div>
-      <h3>Review and Launch</h3>
-      <p>Review all settings above before starting.</p>
-    </div>
-    <button type="submit" id="startBtn">🚀 Start Experiment</button>
-  </div>
-
-</form>
-
-<!-- ── Progress ──────────────────────────────────────────────────── -->
-<div class="builder-section mt-4" id="progressCard" style="display:none; border-color:var(--primary);">
-  <div class="flex-between">
-    <h2 style="margin:0; font-size:1rem;">Simulation Progress</h2>
-    <div style="display:flex; gap:1rem; align-items:center;">
-      <button id="stopBtn" class="button danger" style="display:none; padding:0.4rem 1rem; font-size:0.85rem;" onclick="stopExperiment()">Stop</button>
-      <span id="statusBadge" class="status running">RUNNING</span>
-    </div>
-  </div>
-  <div class="progress-container">
-    <div class="flex-between" style="font-size:0.9rem; font-weight:500;">
-      <span id="progressText">0 / 0 completed</span>
-      <span id="progressPercent">0%</span>
-    </div>
-    <div class="progress-bar-track">
-      <div class="progress-bar-fill" id="progressFill"></div>
-    </div>
-  </div>
-  <p id="errorText" class="mt-4" style="display:none; color:var(--danger); white-space:pre-wrap; font-size:0.9rem;"></p>
-  <div id="resultsActions" class="mt-4" style="display:none; text-align:right;">
-    <a href="#" id="dashboardLink" class="button">View Results Dashboard</a>
-  </div>
+</div>
 </div>
 
 {% endblock %}
 
 {% block scripts %}
 <script>
-  document.getElementById('taskType').addEventListener('change', function(e) {
-    const isCustom = e.target.value === 'custom';
-    const cg = document.getElementById('customTaskGroup');
-    if (cg) cg.style.display = isCustom ? 'block' : 'none';
-    const isg = document.getElementById('isScoredGroup');
-    if (isg) isg.style.display = isCustom ? 'block' : 'none';
+/* ================================================================
+   Pure AI Builder — full state-driven UI (matches v5 prototype)
+   ================================================================ */
+
+const STEPS = [
+  ['Research Design',       'Phenomenon & question'],
+  ['Organizational Structure','Interdependence'],
+  ['Task Configuration',    'Base task or custom'],
+  ['AI Team Configuration', 'Agents, rounds & context'],
+  ['Simulation Settings',   'Replications & metadata'],
+  ['LLM Configuration',     'Models, API key & demo'],
+  ['Review & Launch',       'Verify, save & run']
+];
+
+const st = {
+  step: 0,
+  phenomenon: 'Coordination under distributed expertise',
+  researchQuestion: 'How does interdependence structure affect whether AI teams surface and use unique expertise?',
+  structure: 'Reciprocal',
+  task: 'Hidden-Profile Decision Task',
+  customTaskName: '', customTaskPrompt: '', customTaskScoring: '', taskScored: 'Yes',
+  agents: 4, rounds: 6,
+  composition: 'Heterogeneous agents',
+  agentDetails: [
+    'Domain expert. Receives unique evidence A and is instructed to surface relevant expertise.',
+    'Skeptical evaluator. Receives unique evidence B and challenges unsupported claims.',
+    'Integrator. Receives unique evidence C and looks for connections across contributions.',
+    'Generalist. Receives unique evidence D and focuses on the overall team objective.'
+  ],
+  reps: 50, concurrency: 4, seed: '2026', conditionName: 'Main condition', researcherNotes: '',
+  llmAssignment: 'Same model for all agents',
+  provider: 'Mock', model: 'Mock Backend (Demo)', apiKey: '',
+  temperature: 0.7, maxTokens: 4000, baseURL: '', timeout: 120,
+  perAgentLLM: []
+};
+
+/* ensure perAgentLLM length matches agents */
+function ensureArrays() {
+  while (st.perAgentLLM.length < st.agents)
+    st.perAgentLLM.push({ provider: st.provider, model: st.model, apiKey: '' });
+  st.perAgentLLM = st.perAgentLLM.slice(0, st.agents);
+  while (st.agentDetails.length < st.agents) st.agentDetails.push('');
+  st.agentDetails = st.agentDetails.slice(0, st.agents);
+}
+
+function esc(v) {
+  return String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+}
+function sel(v, x) { return v === x ? ' selected' : ''; }
+
+/* ── Render sidebar ── */
+function renderSteps() {
+  document.getElementById('pbSteps').innerHTML = STEPS.map((s, i) => `
+    <div class="pb-step ${i === st.step ? 'active' : ''} ${i < st.step ? 'done' : ''}" onclick="go(${i})">
+      <div class="pb-num">${i < st.step ? '✓' : i + 1}</div>
+      <div><strong>${s[0]}</strong><span>${s[1]}</span></div>
+    </div>`).join('');
+}
+
+/* ── Nav buttons ── */
+function navBtns(label = 'Continue') {
+  return `
+  <div class="pb-buttons">
+    <button class="pb-btn" onclick="go(st.step-1)" ${st.step === 0 ? 'disabled' : ''}>← Back</button>
+    <div style="display:flex;gap:8px;">
+      <button class="pb-btn ghost" onclick="window.location='/'">Exit builder</button>
+      <button class="pb-btn primary" onclick="go(st.step+1)" ${st.step === STEPS.length-1 ? 'style=display:none' : ''}>${label} →</button>
+    </div>
+  </div>`;
+}
+
+/* ── Step 1: Research Design ── */
+function renderResearch() {
+  return `
+  <div class="pb-section-head">
+    <div><h2>1. Research Design</h2><p>Define the organizational phenomenon and research question for this study.</p></div>
+    <span class="pb-badge">Research design</span>
+  </div>
+  <div class="pb-field">
+    <label>Organizational Phenomenon</label>
+    <select onchange="st.phenomenon=this.value">
+      <option${sel(st.phenomenon,'Coordination under distributed expertise')}>Coordination under distributed expertise</option>
+      <option${sel(st.phenomenon,'Information sharing and integration')}>Information sharing and integration</option>
+      <option${sel(st.phenomenon,'Human intervention in AI teams')}>Human intervention in AI teams</option>
+      <option${sel(st.phenomenon,'Team creativity and innovation')}>Team creativity and innovation</option>
+      <option${sel(st.phenomenon,'Custom / other organizational phenomenon')}>Custom / other organizational phenomenon</option>
+    </select>
+  </div>
+  <div class="pb-field">
+    <label>Research Question</label>
+    <textarea oninput="st.researchQuestion=this.value">${esc(st.researchQuestion)}</textarea>
+  </div>
+  ${navBtns()}`;
+}
+
+/* ── Step 2: Structure ── */
+function structDiagram(name) {
+  if (name === 'Pooled') return `
+    <div class="pb-diagram">
+      <span class="pb-node">A</span><span class="pb-arrow">↘</span>
+      <span class="pb-node">Σ</span>
+      <span class="pb-arrow">↙</span><span class="pb-node">C</span>
+    </div>`;
+  if (name === 'Sequential') return `
+    <div class="pb-diagram">
+      <span class="pb-node">A</span><span class="pb-arrow">→</span>
+      <span class="pb-node">B</span><span class="pb-arrow">→</span>
+      <span class="pb-node">C</span><span class="pb-arrow">→</span>
+      <span class="pb-node">D</span>
+    </div>`;
+  if (name === 'Reciprocal') return `
+    <div class="pb-diagram" style="flex-direction:column;gap:4px;">
+      <div style="display:flex;align-items:center;gap:4px;">
+        <span class="pb-node">A</span><span class="pb-arrow">⇄</span><span class="pb-node">B</span>
+      </div>
+      <div style="color:#7a8699;font-size:11px;display:flex;gap:28px;margin-left:6px;">↕ ↕</div>
+      <div style="display:flex;align-items:center;gap:4px;">
+        <span class="pb-node">D</span><span class="pb-arrow">⇄</span><span class="pb-node">C</span>
+      </div>
+    </div>`;
+  return `
+    <div class="pb-diagram" style="flex-direction:column;gap:4px;">
+      <span style="font-size:10px;color:#667085;">shared task</span>
+      <div style="display:flex;align-items:center;gap:4px;">
+        <span class="pb-node">A</span><span class="pb-arrow">⇄</span>
+        <span class="pb-node">B</span><span class="pb-arrow">⇄</span>
+        <span class="pb-node">C</span>
+      </div>
+      <span style="font-size:10px;color:#667085;">continuous mutual adjustment</span>
+    </div>`;
+}
+
+function renderStructure() {
+  const structs = [
+    ['Pooled','Members work independently; contributions are aggregated.','Independent contribution','Aggregation'],
+    ['Sequential','Work is passed through structured handoffs.','Workflow order','Handoffs'],
+    ['Reciprocal','Members iteratively exchange outputs and adapt to one another.','Bidirectional dependence','Iterative coordination'],
+    ['Team','Members coordinate jointly through continuous mutual adjustment.','Intensive dependence','Joint adjustment']
+  ];
+  return `
+  <div class="pb-section-head">
+    <div><h2>2. Organizational Structure</h2><p>Select the interdependence structure that determines how work and information flow among agents.</p></div>
+    <span class="pb-badge">Interdependence</span>
+  </div>
+  <div class="pb-field">
+    <label>Interdependence Structure</label>
+    <div class="pb-cards">
+      ${structs.map(s => `
+      <div class="pb-card ${st.structure === s[0] ? 'selected' : ''}" onclick="st.structure='${s[0]}';render()">
+        <span class="pb-check">✓</span>
+        <h3>${s[0]}</h3><p>${s[1]}</p>
+        ${structDiagram(s[0])}
+        <div class="pb-meta"><span class="pb-chip">${s[2]}</span><span class="pb-chip">${s[3]}</span></div>
+      </div>`).join('')}
+    </div>
+  </div>
+  ${navBtns()}`;
+}
+
+/* ── Step 3: Task ── */
+function renderTask() {
+  const tasks = [
+    ['Hidden-Profile Decision Task','Information Integration','Unique + shared clues are distributed across members; success requires surfacing unique information.','Information sharing','Expertise recognition','Objective scoring'],
+    ['Specialist Coordination Task','Distributed Expertise','Members hold differentiated expertise required for a joint solution.','Specialization','Coordination','Expertise utilization'],
+    ['Ranking / Selection Task','Judgment & Decision Making','Teams compare alternatives using distributed criteria and produce a scored decision.','Consensus','Decision quality','Process trace'],
+    ['Idea Generation + Evaluation','Creativity & Innovation','Separate divergence and convergence phases for studying novelty and selection.','Creativity','Mutual adjustment','Evaluation'],
+    ['Custom Task','Researcher Defined','Bring your own task prompt, instructions, scenario, and optional scoring guidance.','Custom prompt','Custom domain','Custom scoring']
+  ];
+  return `
+  <div class="pb-section-head">
+    <div><h2>3. Task Configuration</h2><p>Select a base task adapted from team research, or provide a custom task prompt.</p></div>
+    <button class="pb-btn" onclick="window.open('/task-library','_blank')">Open Task Library</button>
+  </div>
+  <div class="pb-field">
+    <label>Select Base Task</label>
+    <div class="pb-cards">
+      ${tasks.map(t => `
+      <div class="pb-card task ${st.task === t[0] ? 'selected' : ''}" onclick="st.task='${t[0].replace(/'/g,"\\'")}';render()">
+        <span class="pb-check">✓</span>
+        <div class="pb-kicker">${t[1]}</div>
+        <h3>${t[0]}</h3><p>${t[2]}</p>
+        <div class="pb-meta">
+          <span class="pb-chip">${t[3]}</span>
+          <span class="pb-chip">${t[4]}</span>
+          <span class="pb-chip">${t[5]}</span>
+        </div>
+        ${t[0] !== 'Custom Task' ? '<div class="pb-cite">View theoretical basis &bull; View scoring protocol &bull; View implementation notes</div>' : ''}
+      </div>`).join('')}
+    </div>
+  </div>
+  ${st.task === 'Custom Task' ? `
+  <div class="pb-subhead">Custom Task</div>
+  <div class="pb-field">
+    <label>Custom Task Prompt</label>
+    <textarea oninput="st.customTaskPrompt=this.value" placeholder="Describe the task, scenario, information, constraints, and desired output...">${esc(st.customTaskPrompt)}</textarea>
+  </div>
+  <div class="pb-fieldrow">
+    <div class="pb-field">
+      <label>Task Name</label>
+      <input value="${esc(st.customTaskName)}" placeholder="e.g. New product launch decision" oninput="st.customTaskName=this.value">
+    </div>
+    <div class="pb-field">
+      <label>Is this task scored?</label>
+      <select onchange="st.taskScored=this.value;render()">
+        <option${sel(st.taskScored,'Yes')}>Yes</option><option${sel(st.taskScored,'No')}>No</option>
+      </select>
+    </div>
+  </div>
+  ${st.taskScored === 'Yes' ? `<div class="pb-field"><label>Scoring / Evaluation Guidance (optional)</label><input value="${esc(st.customTaskScoring)}" placeholder="e.g. correct answer, rubric, or judge criteria" oninput="st.customTaskScoring=this.value"></div>` : ''}
+  ` : `
+  <div class="pb-field" style="max-width:300px;">
+    <label>Is this task scored?</label>
+    <select onchange="st.taskScored=this.value;render()">
+      <option${sel(st.taskScored,'Yes')}>Yes</option><option${sel(st.taskScored,'No')}>No</option>
+    </select>
+  </div>`}
+  ${navBtns()}`;
+}
+
+/* ── Step 4: Team ── */
+function renderTeam() {
+  ensureArrays();
+  return `
+  <div class="pb-section-head">
+    <div><h2>4. AI Team Configuration</h2><p>Configure the number of agents, discussion rounds, and whether agents share the same instructions or receive different context.</p></div>
+    <span class="pb-badge">Team configuration</span>
+  </div>
+  <div class="pb-fieldrow">
+    <div class="pb-field">
+      <label>Number of Agents</label>
+      <input type="number" min="2" max="12" value="${st.agents}" onchange="st.agents=Math.max(2,Math.min(12,+this.value||2));ensureArrays();render()">
+    </div>
+    <div class="pb-field">
+      <label>Discussion Rounds</label>
+      <input type="number" min="1" max="50" value="${st.rounds}" oninput="st.rounds=+this.value||1">
+    </div>
+  </div>
+  <div class="pb-fieldrow">
+    <div class="pb-field">
+      <label>Agent Composition</label>
+      <select onchange="st.composition=this.value;render()">
+        <option${sel(st.composition,'Homogeneous agents')}>Homogeneous agents</option>
+        <option${sel(st.composition,'Heterogeneous agents')}>Heterogeneous agents</option>
+      </select>
+    </div>
+    <div class="pb-field">
+      <label>Interdependence Structure</label>
+      <input class="pb-readonly" value="${esc(st.structure)}" readonly>
+    </div>
+  </div>
+  ${st.composition === 'Homogeneous agents' ? `
+  <div class="pb-field">
+    <label>Shared Agent Instructions / Context (optional)</label>
+    <textarea oninput="st.agentDetails[0]=this.value" placeholder="Shared role, expertise, information, persona, or task context...">${esc(st.agentDetails[0] || '')}</textarea>
+  </div>
+  ` : `
+  <div class="pb-subhead">Agent-Specific Instructions / Context</div>
+  <p class="pb-hint">Use one flexible box per agent for any combination of persona, expertise, private information, role, incentives, or constraints.</p>
+  <div class="pb-agent-list">
+    ${Array.from({length: st.agents}, (_, i) => `
+    <div class="pb-agent-card">
+      <h4>Agent ${i + 1}</h4>
+      <div class="pb-field" style="margin:0;">
+        <textarea oninput="st.agentDetails[${i}]=this.value" placeholder="Agent ${i+1} instructions, information, persona, expertise, or other context...">${esc(st.agentDetails[i] || '')}</textarea>
+      </div>
+    </div>`).join('')}
+  </div>`}
+  ${navBtns()}`;
+}
+
+/* ── Step 5: Simulation Settings ── */
+function renderExperiment() {
+  return `
+  <div class="pb-section-head">
+    <div><h2>5. Simulation Settings</h2><p>Configure batch size, concurrency, reproducibility settings, and experiment metadata.</p></div>
+    <span class="pb-badge">Simulation settings</span>
+  </div>
+  <div class="pb-fieldrow">
+    <div class="pb-field">
+      <label>Replications <span class="fw">(How many times to repeat the simulation)</span></label>
+      <input type="number" min="1" value="${st.reps}" oninput="st.reps=+this.value||1">
+    </div>
+    <div class="pb-field">
+      <label>Concurrency Limit <span class="fw">(How many simulations run in parallel)</span></label>
+      <input type="number" min="1" value="${st.concurrency}" oninput="st.concurrency=+this.value||1">
+    </div>
+  </div>
+  <div class="pb-fieldrow">
+    <div class="pb-field">
+      <label>Random Seed (optional, for reproducibility)</label>
+      <input value="${esc(st.seed)}" placeholder="e.g. 42" oninput="st.seed=this.value">
+    </div>
+    <div class="pb-field">
+      <label>Experiment Label (optional)</label>
+      <input value="${esc(st.conditionName)}" placeholder="e.g. pilot_study_v2" oninput="st.conditionName=this.value">
+    </div>
+  </div>
+  <div class="pb-field">
+    <label>Researcher Notes (saved with experiment metadata)</label>
+    <textarea oninput="st.researcherNotes=this.value" placeholder="Optional notes about hypotheses, conditions, implementation, or pilot decisions...">${esc(st.researcherNotes)}</textarea>
+  </div>
+  <table class="pb-matrix">
+    <tr><th>Experiment</th><th>Task</th><th>Agents</th><th>Structure</th><th>Rounds</th><th>Replications</th></tr>
+    <tr>
+      <td>${esc(st.conditionName || 'Untitled')}</td>
+      <td>${esc(displayTask())}</td>
+      <td>${st.agents}</td>
+      <td>${esc(st.structure)}</td>
+      <td>${st.rounds}</td>
+      <td>${st.reps}</td>
+    </tr>
+  </table>
+  ${navBtns()}`;
+}
+
+/* ── Step 6: LLM ── */
+function providerOpts(cur) {
+  return ['UVA RC GenAI','OpenAI','Anthropic','Google','Local / OpenAI-compatible','Mock'].map(x => `<option${sel(cur,x)}>${x}</option>`).join('');
+}
+function modelOpts(cur) {
+  return ['Kimi K2.5 (UVA RC GenAI)','GPT-4o','GPT-4 Turbo','GPT-3.5 Turbo','Claude 3.5 Sonnet','Claude 3 Opus','Gemini 2.5 Pro','Llama 3.1 70B','Custom model','Mock Backend (Demo)'].map(x => `<option${sel(cur,x)}>${x}</option>`).join('');
+}
+function apiField(value, model, idx) {
+  const mock = model === 'Mock Backend (Demo)';
+  const oninput = idx === null ? 'st.apiKey=this.value' : `st.perAgentLLM[${idx}].apiKey=this.value`;
+  return `
+  <div class="pb-field">
+    <label>API Key ${mock ? '(not required for Mock Demo)' : '(required for live model access)'}</label>
+    <input type="password" value="${mock ? '' : esc(value)}" ${mock ? 'disabled' : ''} placeholder="${mock ? 'Mock agents run without a key' : 'Enter API key'}" oninput="${oninput}">
+    <div class="pb-note">API keys are used only for the active session and are not saved in Experiment History or exported protocols.</div>
+  </div>`;
+}
+
+function renderLLM() {
+  ensureArrays();
+  return `
+  <div class="pb-section-head">
+    <div><h2>6. LLM Configuration</h2><p>Select the model(s) for your team. Enter the API key immediately after model selection, or use the Mock Demo without a key.</p></div>
+    <span class="pb-badge">LLM configuration</span>
+  </div>
+  <div class="pb-mock-callout">
+    <div>Want to test the interface without calling an external model? Use the Mock Demo. It does not require an API key.</div>
+    <button class="pb-btn small" onclick="useMockDemo()">Use Mock Demo</button>
+  </div>
+  <div class="pb-field">
+    <label>Model Assignment</label>
+    <select onchange="st.llmAssignment=this.value;render()">
+      <option${sel(st.llmAssignment,'Same model for all agents')}>Same model for all agents</option>
+      <option${sel(st.llmAssignment,'Configure model per agent')}>Configure model per agent</option>
+    </select>
+  </div>
+  ${st.llmAssignment === 'Same model for all agents' ? `
+  <div class="pb-llm-box">
+    <div class="pb-fieldrow">
+      <div class="pb-field">
+        <label>Provider</label>
+        <select onchange="st.provider=this.value">${providerOpts(st.provider)}</select>
+      </div>
+      <div class="pb-field">
+        <label>Model</label>
+        <select onchange="st.model=this.value;if(this.value==='Mock Backend (Demo)'){st.provider='Mock';st.apiKey=''}render()">${modelOpts(st.model)}</select>
+      </div>
+    </div>
+    ${apiField(st.apiKey, st.model, null)}
+  </div>
+  ` : `
+  <div class="pb-subhead">Select Models for Your Team</div>
+  <p class="pb-hint">Configure the provider and model for each agent. API keys appear directly after each model selection.</p>
+  ${Array.from({length: st.agents}, (_, i) => `
+  <div class="pb-llm-box">
+    <div class="pb-field" style="margin-bottom:8px;"><label>Agent ${i+1}</label></div>
+    <div class="pb-fieldrow">
+      <div class="pb-field">
+        <label>Provider</label>
+        <select onchange="st.perAgentLLM[${i}].provider=this.value">${providerOpts(st.perAgentLLM[i].provider)}</select>
+      </div>
+      <div class="pb-field">
+        <label>Model</label>
+        <select onchange="st.perAgentLLM[${i}].model=this.value;if(this.value==='Mock Backend (Demo)'){st.perAgentLLM[${i}].provider='Mock';st.perAgentLLM[${i}].apiKey=''}render()">${modelOpts(st.perAgentLLM[i].model)}</select>
+      </div>
+    </div>
+    ${apiField(st.perAgentLLM[i].apiKey, st.perAgentLLM[i].model, i)}
+  </div>`).join('')}
+  `}
+  <div class="pb-subhead">Generation Settings</div>
+  <div class="pb-fieldrow">
+    <div class="pb-field">
+      <label>Temperature</label>
+      <input type="number" min="0" max="2" step="0.1" value="${st.temperature}" oninput="st.temperature=+this.value">
+    </div>
+    <div class="pb-field">
+      <label>Max Output Tokens</label>
+      <input type="number" min="100" value="${st.maxTokens}" oninput="st.maxTokens=+this.value">
+    </div>
+  </div>
+  <details class="pb-advanced">
+    <summary>Connection &amp; Advanced Settings</summary>
+    <div class="inside">
+      <div class="pb-fieldrow">
+        <div class="pb-field">
+          <label>Base URL (optional)</label>
+          <input value="${esc(st.baseURL)}" placeholder="https://api... or local endpoint" oninput="st.baseURL=this.value">
+        </div>
+        <div class="pb-field">
+          <label>Timeout (seconds)</label>
+          <input type="number" value="${st.timeout}" oninput="st.timeout=+this.value">
+        </div>
+      </div>
+    </div>
+  </details>
+  ${navBtns('Review configuration')}`;
+}
+
+/* ── Step 7: Review & Launch ── */
+function displayTask() { return st.task === 'Custom Task' ? (st.customTaskName || 'Custom Task') : st.task; }
+function protocolObj() {
+  ensureArrays();
+  const obj = {
+    builder: 'pure_ai_team',
+    research_question: st.researchQuestion,
+    phenomenon: st.phenomenon,
+    task: { type: st.task, name: displayTask(), scored: st.taskScored === 'Yes' }
+  };
+  if (st.task === 'Custom Task') {
+    obj.task.prompt = st.customTaskPrompt;
+    if (st.taskScored === 'Yes') obj.task.scoring = st.customTaskScoring;
+  }
+  obj.organizational_structure = st.structure;
+  obj.team = {
+    agents: Number(st.agents), discussion_rounds: Number(st.rounds),
+    composition: st.composition,
+    instructions: st.composition === 'Homogeneous agents' ? [st.agentDetails[0] || ''] : st.agentDetails.slice(0, st.agents)
+  };
+  obj.simulation = {
+    replications: Number(st.reps), concurrency_limit: Number(st.concurrency),
+    seed: st.seed, experiment_label: st.conditionName, researcher_notes: st.researcherNotes
+  };
+  obj.llm = {
+    assignment: st.llmAssignment, temperature: Number(st.temperature),
+    max_output_tokens: Number(st.maxTokens), base_url: st.baseURL || null, timeout_seconds: Number(st.timeout)
+  };
+  if (st.llmAssignment === 'Same model for all agents') {
+    obj.llm.provider = st.provider; obj.llm.model = st.model;
+    obj.llm.mock_demo = st.model === 'Mock Backend (Demo)';
+  } else {
+    obj.llm.agents = st.perAgentLLM.slice(0, st.agents).map(x => ({ provider: x.provider, model: x.model, mock_demo: x.model === 'Mock Backend (Demo)' }));
+  }
+  obj.capture = ['configuration','agent instructions','prompts','model/version metadata','random seed','full interaction trace','scoring rules'];
+  return obj;
+}
+
+function renderProtocol() {
+  const spec = JSON.stringify(protocolObj(), null, 2);
+  return `
+  <div class="pb-section-head">
+    <div><h2>7. Review &amp; Launch</h2><p>Verify the configuration before launching. You can also save the configuration to Experiment History for later reuse.</p></div>
+    <span class="pb-badge">Verify configuration</span>
+  </div>
+  <div class="pb-protocol">
+    <h4>Study Summary</h4>
+    <div class="pb-fieldrow" style="font-size:13px; margin-bottom:16px;">
+      <div>
+        <span style="font-size:11px;color:#667085;display:block;margin-bottom:3px;">Study</span>
+        <strong>${esc(st.structure)} &bull; ${esc(displayTask())} &bull; ${st.agents} agents &bull; ${st.rounds} rounds</strong>
+      </div>
+      <div>
+        <span style="font-size:11px;color:#667085;display:block;margin-bottom:3px;">Builder</span>
+        <strong>Pure AI Team</strong>
+      </div>
+    </div>
+    <div class="pb-subhead">Machine-Readable Study Specification</div>
+    <div class="pb-code" id="pbSpec">${esc(spec)}</div>
+  </div>
+  <div class="pb-audit">
+    <div>✓ Agent transcript</div>
+    <div>✓ Model/version metadata</div>
+    <div>✓ Task &amp; agent instructions</div>
+    <div>✓ Random seed</div>
+    <div>✓ Scoring configuration</div>
+  </div>
+  <div class="pb-buttons">
+    <button class="pb-btn" onclick="go(st.step-1)">← Back</button>
+    <div style="display:flex;gap:8px;">
+      <button class="pb-btn" onclick="pbCopySpec()">Copy JSON</button>
+      <button class="pb-btn" onclick="pbDownloadSpec()">Download Protocol</button>
+      <button class="pb-btn" onclick="pbSaveHistory('Saved')">Save to History</button>
+      <button class="pb-btn primary" onclick="pbLaunch()">Start Experiment →</button>
+    </div>
+  </div>`;
+}
+
+/* ── Main render ── */
+function render() {
+  renderSteps();
+  const w = document.getElementById('pbWork');
+  if (!w) return;
+  const fns = [renderResearch, renderStructure, renderTask, renderTeam, renderExperiment, renderLLM, renderProtocol];
+  w.innerHTML = fns[st.step]();
+}
+
+function go(i) {
+  if (i < 0 || i >= STEPS.length) return;
+  st.step = i;
+  render();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function useMockDemo() {
+  st.llmAssignment = 'Same model for all agents';
+  st.provider = 'Mock'; st.model = 'Mock Backend (Demo)'; st.apiKey = '';
+  render();
+}
+
+/* ── Copy / Download ── */
+function pbCopySpec() {
+  const el = document.getElementById('pbSpec');
+  if (!el) return;
+  navigator.clipboard.writeText(el.innerText);
+  alert('Study specification copied to clipboard.');
+}
+function pbDownloadSpec() {
+  const el = document.getElementById('pbSpec');
+  if (!el) return;
+  const blob = new Blob([el.innerText], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'pure_ai_study_protocol.json';
+  a.click(); URL.revokeObjectURL(a.href);
+}
+
+/* ── History (localStorage) ── */
+const HIST_KEY = 'pbExperimentHistoryV1';
+function getHistory() { try { return JSON.parse(localStorage.getItem(HIST_KEY) || '[]'); } catch { return []; } }
+function setHistory(items) { localStorage.setItem(HIST_KEY, JSON.stringify(items)); }
+
+function pbSaveHistory(status = 'Saved', silent = false) {
+  const items = getHistory();
+  const snap = JSON.parse(JSON.stringify(st));
+  snap.apiKey = ''; if (Array.isArray(snap.perAgentLLM)) snap.perAgentLLM.forEach(x => x.apiKey = '');
+  items.unshift({
+    id: 'exp_' + Date.now(), created_at: new Date().toISOString(),
+    type: 'Pure AI', task: displayTask(), agents: st.agents,
+    structure: st.structure, model: st.model, status,
+    label: st.conditionName || 'Untitled', snapshot: snap
   });
+  setHistory(items.slice(0, 50));
+  if (!silent) alert('Configuration saved. API keys were not stored.');
+}
+
+/* ── Backend Launch ── */
+async function pbLaunch() {
+  ensureArrays();
+  let isMock = st.model === 'Mock Backend (Demo)' || st.provider === 'Mock';
+
+  // If no API key and not already mock, auto-fallback to mock
+  if (!isMock && !st.apiKey) {
+    isMock = true;
+  }
+
+  // Build backend payload
+  const taskType = st.task === 'Custom Task' ? 'custom' :
+    st.task === 'Hidden-Profile Decision Task' ? 'lost_at_sea' :
+    st.task === 'Specialist Coordination Task' ? 'specialist_coordination' :
+    st.task === 'Ranking / Selection Task' ? 'ranking' :
+    st.task === 'Idea Generation + Evaluation' ? 'idea_generation' : 'lost_at_sea';
+
+  const agentInstructions = st.composition === 'Homogeneous agents'
+    ? Array(st.agents).fill(st.agentDetails[0] || '')
+    : st.agentDetails.slice(0, st.agents);
+
+  const payload = {
+    num_simulations: st.reps,
+    concurrency: st.concurrency,
+    random_seed: st.seed ? parseInt(st.seed) : null,
+    experiment_label: st.conditionName || '',
+    researcher_notes: st.researcherNotes || '',
+    llm: {
+      multi_llm: st.llmAssignment !== 'Same model for all agents',
+      provider_model: isMock ? 'mock' : st.model.toLowerCase().replace(/\s+/g, '-'),
+      selected_models: [isMock ? 'mock' : st.model.toLowerCase().replace(/\s+/g, '-')],
+      api_key: st.apiKey || '',
+      temperature: st.temperature,
+      max_tokens: st.maxTokens,
+      base_url: st.baseURL || null,
+      timeout: st.timeout
+    },
+    task: {
+      type: taskType,
+      custom_prompt: st.customTaskPrompt || '',
+      is_scored: st.taskScored === 'Yes'
+    },
+    team: {
+      num_agents: st.agents,
+      num_rounds: st.rounds,
+      structure: st.structure.toLowerCase(),
+      agent_configs: agentInstructions.map((desc, i) => ({ agent_id: i + 1, description: desc }))
+    }
+  };
+
+  try {
+    document.getElementById('pbProgressCard').style.display = 'block';
+    document.getElementById('pbStopBtn').style.display = '';
+    document.getElementById('pbStatusBadge').textContent = 'RUNNING';
+    document.getElementById('pbStatusBadge').className = 'pb-status running';
+    document.getElementById('pbProgressText').textContent = '0 / ' + st.reps + ' completed';
+    document.getElementById('pbProgressPct').textContent = '0%';
+    document.getElementById('pbProgressFill').style.width = '0%';
+    document.getElementById('pbErrorText').style.display = 'none';
+    document.getElementById('pbResultsActions').style.display = 'none';
+    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+
+    const res = await fetch('/api/batch/start', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || data.error || 'Server error');
+
+    const batchId = data.job_id || data.experiment_id;
+    pbSaveHistory('Running', true);
+    pbPollProgress(batchId);
+  } catch (err) {
+    document.getElementById('pbStatusBadge').textContent = 'ERROR';
+    document.getElementById('pbStatusBadge').className = 'pb-status error';
+    document.getElementById('pbStopBtn').style.display = 'none';
+    document.getElementById('pbErrorText').textContent = err.message;
+    document.getElementById('pbErrorText').style.display = 'block';
+  }
+}
+
+/* ── Polling ── */
+let pbPollTimer = null;
+function pbPollProgress(batchId) {
+  clearInterval(pbPollTimer);
+  pbPollTimer = setInterval(async () => {
+    try {
+      const res = await fetch(`/api/batch/${batchId}/status`);
+      const d = await res.json();
+      const done = d.completed || 0, total = d.total || 1;
+      const pct = Math.round(done / total * 100);
+      document.getElementById('pbProgressText').textContent = `${done} / ${total} completed`;
+      document.getElementById('pbProgressPct').textContent = pct + '%';
+      document.getElementById('pbProgressFill').style.width = pct + '%';
+      if (d.status === 'done' || d.status === 'error') {
+        clearInterval(pbPollTimer);
+        const badge = document.getElementById('pbStatusBadge');
+        badge.textContent = d.status === 'done' ? 'DONE' : 'ERROR';
+        badge.className = 'pb-status ' + (d.status === 'done' ? 'done' : 'error');
+        document.getElementById('pbStopBtn').style.display = 'none';
+        if (d.status === 'done') {
+          const ra = document.getElementById('pbResultsActions');
+          ra.style.display = 'block';
+          document.getElementById('pbDashboardLink').href = `/experiment/${batchId}/dashboard`;
+        }
+        if (d.error) {
+          document.getElementById('pbErrorText').textContent = d.error;
+          document.getElementById('pbErrorText').style.display = 'block';
+        }
+      }
+    } catch { clearInterval(pbPollTimer); }
+  }, 2000);
+}
+
+function pbStopExperiment() {
+  clearInterval(pbPollTimer);
+  document.getElementById('pbStatusBadge').textContent = 'STOPPED';
+  document.getElementById('pbStatusBadge').className = 'pb-status error';
+  document.getElementById('pbStopBtn').style.display = 'none';
+}
+
+/* ── Boot ── */
+ensureArrays();
+render();
 </script>
 {% endblock %}
