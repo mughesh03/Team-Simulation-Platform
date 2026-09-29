@@ -14,14 +14,21 @@ from pathlib import Path
 from typing import Dict, Literal, Optional, Any
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
-from fastapi.responses import HTMLResponse, Response
+from fastapi import FastAPI, Form, Request, WebSocket, WebSocketDisconnect
+from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, Field
 
 from .agents import agent_turn, answer_human_question, make_agent_names, summarize_transcript
 from . import storage
+from .auth import (
+    RESEARCHER_PASSWORD,
+    COOKIE_NAME,
+    create_session_token,
+    verify_session_token,
+    get_current_user,
+)
 
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
@@ -234,9 +241,12 @@ async def stop_experiment(job_id: str):
     if not job:
         # Check if it's a HITL session
         session = SESSIONS.get(job_id)
-        if session and session.run_task and not session.run_task.done():
-            session.run_task.cancel()
-            return {"status": "stopped"}
+        if session:
+            if session.run_task and not session.run_task.done():
+                session.run_task.cancel()
+                return {"status": "stopped"}
+            # Session exists but hasn't started running (no WebSocket connected)
+            return {"status": "stopped", "detail": "Session was not yet running."}
         return {"error": "job not found"}
     
     if job.get("status") not in ("running", "queued"):
@@ -590,7 +600,40 @@ async def session_page(request: Request):
     return templates.TemplateResponse("hitl_setup.html", {"request": request})
 
 @app.get("/login", response_class=HTMLResponse)
-async def login_page(request: Request): return templates.TemplateResponse("login.html", {"request": request})
+async def login_page(request: Request):
+    # If already authenticated, redirect to home
+    if get_current_user(request):
+        return RedirectResponse("/", status_code=302)
+    return templates.TemplateResponse("login.html", {"request": request})
+
+
+@app.post("/login")
+async def login_submit(request: Request, password: str = Form(...)):
+    """Authenticate the researcher with the configured password."""
+    if password != RESEARCHER_PASSWORD:
+        return templates.TemplateResponse("login.html", {
+            "request": request,
+            "error": "Invalid password. Please try again.",
+        })
+    token = create_session_token("researcher")
+    response = RedirectResponse("/", status_code=302)
+    response.set_cookie(
+        key=COOKIE_NAME,
+        value=token,
+        httponly=True,
+        samesite="lax",
+        max_age=60 * 60 * 24,  # 24 hours
+    )
+    return response
+
+
+@app.get("/logout")
+async def logout():
+    """Clear the researcher session cookie and redirect to login."""
+    response = RedirectResponse("/login", status_code=302)
+    response.delete_cookie(key=COOKIE_NAME)
+    return response
+
 
 @app.get("/experiments", response_class=HTMLResponse)
 async def experiments_page(request: Request): return templates.TemplateResponse("experiments.html", {"request": request})
@@ -609,4 +652,11 @@ async def task_library_page(request: Request): return templates.TemplateResponse
 
 @app.get("/research-capabilities", response_class=HTMLResponse)
 async def research_capabilities_page(request: Request): return templates.TemplateResponse("research_capabilities.html", {"request": request})
+
+# Legacy page routes (kept for backward compatibility)
+@app.get("/batch", response_class=HTMLResponse)
+async def legacy_batch_page(request: Request): return templates.TemplateResponse("batch.html", {"request": request})
+
+@app.get("/session", response_class=HTMLResponse)
+async def legacy_session_page(request: Request): return templates.TemplateResponse("session.html", {"request": request})
 

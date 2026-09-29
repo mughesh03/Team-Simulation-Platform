@@ -16,7 +16,7 @@
 <div class="card" id="progressCard" style="display:none;"><h2>Progress</h2><div id="progressText">0 / 0</div><div class="progress-bar-track"><div class="progress-bar-fill" id="progressFill"></div></div></div>
 <div class="card" id="resultsCard" style="display:none;"><h2>Results</h2><p id="avgAgreement"></p><p><a id="csvLink" class="button secondary" href="#">Download results CSV</a></p><div id="bars"></div></div>
 <script>
-const $=id=>document.getElementById(id); let pollTimer=null;
+let pollTimer=null;
 async function startBatch(){
   $('resultsCard').style.display='none'; $('bars').innerHTML=''; $('startBtn').disabled=true;
   const seed=$('seed').value.trim();

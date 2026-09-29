@@ -966,9 +966,12 @@ async function pbLaunch() {
   }
 }
 
+let pbCurrentBatchId = null;
+
 /* ── Polling ── */
 let pbPollTimer = null;
 function pbPollProgress(batchId) {
+  pbCurrentBatchId = batchId;
   clearInterval(pbPollTimer);
   pbPollTimer = setInterval(async () => {
     try {
@@ -979,10 +982,10 @@ function pbPollProgress(batchId) {
       document.getElementById('pbProgressText').textContent = `${done} / ${total} completed`;
       document.getElementById('pbProgressPct').textContent = pct + '%';
       document.getElementById('pbProgressFill').style.width = pct + '%';
-      if (d.status === 'done' || d.status === 'error') {
+      if (d.status === 'done' || d.status === 'error' || d.status === 'stopped') {
         clearInterval(pbPollTimer);
         const badge = document.getElementById('pbStatusBadge');
-        badge.textContent = d.status === 'done' ? 'DONE' : 'ERROR';
+        badge.textContent = d.status === 'done' ? 'DONE' : (d.status === 'stopped' ? 'STOPPED' : 'ERROR');
         badge.className = 'pb-status ' + (d.status === 'done' ? 'done' : 'error');
         document.getElementById('pbStopBtn').style.display = 'none';
         if (d.status === 'done') {
@@ -999,11 +1002,27 @@ function pbPollProgress(batchId) {
   }, 2000);
 }
 
-function pbStopExperiment() {
-  clearInterval(pbPollTimer);
-  document.getElementById('pbStatusBadge').textContent = 'STOPPED';
-  document.getElementById('pbStatusBadge').className = 'pb-status error';
-  document.getElementById('pbStopBtn').style.display = 'none';
+async function pbStopExperiment() {
+  if (!pbCurrentBatchId) return;
+  try {
+    const res = await fetch(`/api/experiment/${pbCurrentBatchId}/stop`, { method: 'POST' });
+    const data = await res.json();
+    if (data.status === 'stopped' || data.error) {
+      clearInterval(pbPollTimer);
+      document.getElementById('pbStatusBadge').textContent = 'STOPPED';
+      document.getElementById('pbStatusBadge').className = 'pb-status error';
+      document.getElementById('pbStopBtn').style.display = 'none';
+      if (data.error && data.error !== 'job not running') {
+        document.getElementById('pbErrorText').textContent = data.error;
+        document.getElementById('pbErrorText').style.display = 'block';
+      }
+    }
+  } catch (err) {
+    clearInterval(pbPollTimer);
+    document.getElementById('pbStatusBadge').textContent = 'STOPPED';
+    document.getElementById('pbStatusBadge').className = 'pb-status error';
+    document.getElementById('pbStopBtn').style.display = 'none';
+  }
 }
 
 /* ── Boot ── */

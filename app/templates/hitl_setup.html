@@ -604,10 +604,25 @@ async function pbLaunch() {
     const sessionId=data.session_id;
     const shortCode=data.session_code||sessionId.substring(0,8);
     const url=`${window.location.origin}/participant/${sessionId}`;
-    div.innerHTML=`<div><strong style="color:var(--p-purple);">Session ${shortCode}</strong><div class="pb-session-link">${url}</div></div><div style="display:flex;gap:8px;"><button class="pb-btn small" onclick="navigator.clipboard.writeText('${url}');this.textContent='Copied!'">Copy Link</button><a href="${url}" target="_blank" class="pb-btn small">Open</a></div>`;
+    div.innerHTML=`<div><strong style="color:var(--p-purple);">Session ${shortCode}</strong><div class="pb-session-link">${url}</div></div><div style="display:flex;gap:8px;"><button class="pb-btn small" onclick="navigator.clipboard.writeText('${url}');this.textContent='Copied!'">Copy Link</button><a href="${url}" target="_blank" class="pb-btn small">Open</a><button class="pb-btn small" style="background:#ef4444;color:#fff;border-color:#ef4444;" onclick="pbStopSession('${sessionId}',this)">Stop</button></div>`;
     document.getElementById('pbSessionList').prepend(div);
     sc.scrollIntoView({behavior:'smooth'});
   }catch(err){alert('Launch failed: '+err.message);}
+}
+
+async function pbStopSession(sessionId, btn) {
+  try {
+    const res = await fetch('/api/experiment/' + sessionId + '/stop', { method: 'POST' });
+    const data = await res.json();
+    if (data.status === 'stopped') {
+      btn.textContent = 'Stopped';
+      btn.disabled = true;
+      btn.style.opacity = '0.5';
+    }
+  } catch (err) {
+    btn.textContent = 'Error';
+    btn.disabled = true;
+  }
 }
 
 ensureArrays();
