@@ -788,23 +788,52 @@ function protocolObj() {
 
 function renderProtocol() {
   const spec = JSON.stringify(protocolObj(), null, 2);
+  const modelLabel = st.llmAssignment === 'Same model for all agents'
+    ? esc(st.model)
+    : st.perAgentLLM.slice(0, st.agents).map(a => esc(a.model)).join(', ');
   return `
   <div class="pb-section-head">
     <div><h2>7. Review &amp; Launch</h2><p>Verify the configuration before launching. You can also save the configuration to Experiment History for later reuse.</p></div>
     <span class="pb-badge">Verify configuration</span>
   </div>
-  <div class="pb-protocol">
-    <h4>Study Summary</h4>
-    <div class="pb-fieldrow" style="font-size:13px; margin-bottom:16px;">
-      <div>
-        <span style="font-size:11px;color:#667085;display:block;margin-bottom:3px;">Study</span>
-        <strong>${esc(st.structure)} &bull; ${esc(displayTask())} &bull; ${st.agents} agents &bull; ${st.rounds} rounds</strong>
+
+  <!-- ── Human-readable summary ── -->
+  <div style="background:linear-gradient(135deg,#eff6ff 0%,#fff 100%);border:1px solid #dce3ff;border-radius:14px;padding:20px 22px;margin-bottom:16px;">
+    <div style="font-size:11px;font-weight:700;color:var(--p-blue);text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px;">Study at a Glance</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px;">
+      <div style="background:#fff;border:1px solid #dce3ff;border-radius:10px;padding:12px 14px;">
+        <div style="font-size:10px;color:#667085;margin-bottom:4px;">Research Question</div>
+        <div style="font-size:12px;color:var(--p-navy);font-weight:600;line-height:1.4;">${esc(st.researchQuestion)||'<em style="color:#aaa;">Not set</em>'}</div>
       </div>
-      <div>
-        <span style="font-size:11px;color:#667085;display:block;margin-bottom:3px;">Builder</span>
-        <strong>Pure AI Team</strong>
+      <div style="background:#fff;border:1px solid #dce3ff;border-radius:10px;padding:12px 14px;">
+        <div style="font-size:10px;color:#667085;margin-bottom:4px;">Task</div>
+        <div style="font-size:12px;color:var(--p-navy);font-weight:600;">${esc(displayTask())}</div>
+        <div style="font-size:10px;color:#667085;margin-top:2px;">Scored: ${st.taskScored}</div>
+      </div>
+      <div style="background:#fff;border:1px solid #dce3ff;border-radius:10px;padding:12px 14px;">
+        <div style="font-size:10px;color:#667085;margin-bottom:4px;">Team</div>
+        <div style="font-size:12px;color:var(--p-navy);font-weight:600;">${st.agents} agents · ${st.rounds} rounds</div>
+        <div style="font-size:10px;color:#667085;margin-top:2px;">${esc(st.composition)} · ${esc(st.structure)}</div>
+      </div>
+      <div style="background:#fff;border:1px solid #dce3ff;border-radius:10px;padding:12px 14px;">
+        <div style="font-size:10px;color:#667085;margin-bottom:4px;">Simulations &amp; Concurrency</div>
+        <div style="font-size:12px;color:var(--p-navy);font-weight:600;">${st.reps} replication${st.reps!==1?'s':''} · max ${st.concurrency} parallel</div>
+        ${st.conditionName ? `<div style="font-size:10px;color:#667085;margin-top:2px;">Label: ${esc(st.conditionName)}</div>` : ''}
+      </div>
+      <div style="background:#fff;border:1px solid #dce3ff;border-radius:10px;padding:12px 14px;">
+        <div style="font-size:10px;color:#667085;margin-bottom:4px;">Model</div>
+        <div style="font-size:12px;color:var(--p-navy);font-weight:600;">${modelLabel}</div>
+        <div style="font-size:10px;color:#667085;margin-top:2px;">Temp: ${st.temperature} · Max tokens: ${st.maxTokens}</div>
+      </div>
+      <div style="background:#fff;border:1px solid #dce3ff;border-radius:10px;padding:12px 14px;">
+        <div style="font-size:10px;color:#667085;margin-bottom:4px;">Random Seed</div>
+        <div style="font-size:12px;color:var(--p-navy);font-weight:600;">${st.seed || '<em style="color:#aaa;font-size:11px;">None (non-reproducible)</em>'}</div>
+        ${st.researcherNotes ? `<div style="font-size:10px;color:#667085;margin-top:2px;">Notes: ${esc(st.researcherNotes).substring(0,60)}${st.researcherNotes.length>60?'…':''}</div>` : ''}
       </div>
     </div>
+  </div>
+
+  <div class="pb-protocol">
     <div class="pb-subhead">Machine-Readable Study Specification</div>
     <div class="pb-code" id="pbSpec">${esc(spec)}</div>
   </div>

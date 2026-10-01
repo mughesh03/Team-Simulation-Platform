@@ -101,10 +101,10 @@
   .pb-agent-list{display:grid;gap:10px;margin-top:10px;}
   .pb-agent-card{border:1px solid var(--p-line);border-radius:12px;padding:12px;background:#fafbfc;}
   .pb-agent-card h4{font-size:12px;margin:0 0 8px;color:var(--p-navy);font-weight:600;}
-  .pb-toggle-row{display:flex;gap:10px;flex-wrap:wrap;}
-  .pb-toggle-card{display:flex;align-items:flex-start;gap:8px;border:1px solid var(--p-line);border-radius:11px;padding:11px 12px;background:#fff;flex:1;min-width:165px;cursor:pointer;}
-  .pb-toggle-card input{margin-top:2px;flex-shrink:0;}
-  .pb-toggle-card b{display:block;font-size:12px;color:var(--p-navy);font-weight:600;}
+  .pb-toggle-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;}
+  .pb-toggle-card{display:flex;align-items:flex-start;gap:10px;border:1px solid var(--p-line);border-radius:11px;padding:12px 14px;background:#fff;cursor:pointer;}
+  .pb-toggle-card input[type=checkbox]{margin-top:1px;flex-shrink:0;width:15px;height:15px;accent-color:var(--p-purple);cursor:pointer;}
+  .pb-toggle-card b{display:block;font-size:12px;color:var(--p-navy);font-weight:600;line-height:1.3;}
   .pb-toggle-card span{display:block;font-size:10px;color:var(--p-muted);margin-top:3px;line-height:1.35;}
   .pb-matrix{width:100%;border-collapse:separate;border-spacing:0;margin-top:10px;font-size:12px;}
   .pb-matrix th,.pb-matrix td{border-right:1px solid var(--p-line);border-bottom:1px solid var(--p-line);padding:9px 10px;text-align:left;}
@@ -157,8 +157,13 @@
     <div class="pb-work" id="pbWork"></div>
     <!-- Session links appear here after creation -->
     <div class="pb-session-card" id="pbSessionCard" style="display:none;">
-      <h3 style="margin:0 0 4px;font-size:16px;color:var(--p-navy);">Participant Sessions</h3>
-      <p style="font-size:12px;color:var(--p-muted);margin:0 0 14px;">Share the link below with your participant. The AI team will wait for their input at the defined intervention points.</p>
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;">
+        <div>
+          <h3 style="margin:0 0 4px;font-size:16px;color:var(--p-navy);">Participant Sessions</h3>
+          <p style="font-size:12px;color:var(--p-muted);margin:0;">Share the link below with your participant. The AI team will wait for their input at the defined intervention points.</p>
+        </div>
+        <a id="pbDashboardBtn" href="/hitl-dashboard" target="_blank" class="pb-btn small" style="background:var(--p-purple);color:#fff;border-color:var(--p-purple);white-space:nowrap;">Researcher Dashboard →</a>
+      </div>
       <div id="pbSessionList"></div>
     </div>
   </div>
@@ -497,18 +502,52 @@ function protocolObj(){
 
 function renderProtocol(){
   const spec=JSON.stringify(protocolObj(),null,2);
+  const recipients=[st.hitlOne?'one agent':'',st.hitlMultiple?'selected agents':'',st.hitlTeam?'entire team':''].filter(Boolean).join(', ')||'no recipients';
+  const modelLabel=st.llmAssignment==='Same model for all agents'?esc(st.model):st.perAgentLLM.slice(0,st.agents).map(a=>esc(a.model)).join(', ');
   return `
   <div class="pb-section-head">
     <div><h2>8. Review &amp; Launch</h2><p>Verify the configuration before creating the participant session. You can also save the configuration to Experiment History for later reuse.</p></div>
     <span class="pb-badge">Verify configuration</span>
   </div>
-  <div class="pb-protocol">
-    <h4>Study Summary</h4>
-    <div class="pb-fieldrow" style="font-size:13px;margin-bottom:16px;">
-      <div><span style="font-size:11px;color:#667085;display:block;margin-bottom:3px;">Study</span><strong>${esc(st.structure)} &bull; ${esc(displayTask())} &bull; ${st.agents} agents &bull; ${st.rounds} rounds</strong></div>
-      <div><span style="font-size:11px;color:#667085;display:block;margin-bottom:3px;">Builder</span><strong>AI Team + Human-in-the-Loop</strong></div>
+
+  <!-- ── Human-readable summary ── -->
+  <div style="background:linear-gradient(135deg,#f6f3ff 0%,#fff 100%);border:1px solid #e0d9ff;border-radius:14px;padding:20px 22px;margin-bottom:16px;">
+    <div style="font-size:11px;font-weight:700;color:var(--p-purple);text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px;">Study at a Glance</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px;">
+      <div style="background:#fff;border:1px solid #ede9fe;border-radius:10px;padding:12px 14px;">
+        <div style="font-size:10px;color:#667085;margin-bottom:4px;">Research Question</div>
+        <div style="font-size:12px;color:var(--p-navy);font-weight:600;line-height:1.4;">${esc(st.researchQuestion)||'<em style="color:#aaa;">Not set</em>'}</div>
+      </div>
+      <div style="background:#fff;border:1px solid #ede9fe;border-radius:10px;padding:12px 14px;">
+        <div style="font-size:10px;color:#667085;margin-bottom:4px;">Task</div>
+        <div style="font-size:12px;color:var(--p-navy);font-weight:600;">${esc(displayTask())}</div>
+        <div style="font-size:10px;color:#667085;margin-top:2px;">Scored: ${st.taskScored}</div>
+      </div>
+      <div style="background:#fff;border:1px solid #ede9fe;border-radius:10px;padding:12px 14px;">
+        <div style="font-size:10px;color:#667085;margin-bottom:4px;">Team</div>
+        <div style="font-size:12px;color:var(--p-navy);font-weight:600;">${st.agents} agents · ${st.rounds} rounds</div>
+        <div style="font-size:10px;color:#667085;margin-top:2px;">${esc(st.composition)} · ${esc(st.structure)}</div>
+      </div>
+      <div style="background:#fff;border:1px solid #ede9fe;border-radius:10px;padding:12px 14px;">
+        <div style="font-size:10px;color:#667085;margin-bottom:4px;">Human Intervention</div>
+        <div style="font-size:12px;color:var(--p-navy);font-weight:600;">${esc(st.hitlTiming)}</div>
+        <div style="font-size:10px;color:#667085;margin-top:2px;">Recipients: ${recipients}</div>
+      </div>
+      <div style="background:#fff;border:1px solid #ede9fe;border-radius:10px;padding:12px 14px;">
+        <div style="font-size:10px;color:#667085;margin-bottom:4px;">Sessions &amp; Concurrency</div>
+        <div style="font-size:12px;color:var(--p-navy);font-weight:600;">${st.reps} session${st.reps!==1?'s':''} · max ${st.concurrency} parallel</div>
+        ${st.conditionName?`<div style="font-size:10px;color:#667085;margin-top:2px;">Label: ${esc(st.conditionName)}</div>`:''}
+      </div>
+      <div style="background:#fff;border:1px solid #ede9fe;border-radius:10px;padding:12px 14px;">
+        <div style="font-size:10px;color:#667085;margin-bottom:4px;">Model</div>
+        <div style="font-size:12px;color:var(--p-navy);font-weight:600;">${modelLabel}</div>
+        <div style="font-size:10px;color:#667085;margin-top:2px;">Temp: ${st.temperature} · Max tokens: ${st.maxTokens}</div>
+      </div>
     </div>
-    <div><span style="font-size:11px;color:#667085;display:block;margin-bottom:3px;">Intervention</span><strong style="font-size:13px;">${esc(st.hitlTiming)} &bull; ${st.hitlPause?'pause enabled':'pause disabled'} &bull; ${[st.hitlOne?'one agent':'',st.hitlMultiple?'selected agents':'',st.hitlTeam?'entire team':''].filter(Boolean).join(' / ')||'no recipients'}</strong></div>
+    ${st.participantInstructions?`<div style="margin-top:12px;padding:10px 12px;background:#fff;border:1px solid #ede9fe;border-radius:10px;"><div style="font-size:10px;color:#667085;margin-bottom:4px;">Participant Instructions</div><div style="font-size:12px;color:var(--p-navy);line-height:1.5;">${esc(st.participantInstructions)}</div></div>`:''}
+  </div>
+
+  <div class="pb-protocol">
     <div class="pb-subhead">Machine-Readable Study Specification</div>
     <div class="pb-code" id="pbSpec">${esc(spec)}</div>
   </div>

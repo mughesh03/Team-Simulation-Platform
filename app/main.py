@@ -586,6 +586,66 @@ async def download_experiment(job_id: str):
     )
 
 
+# -------------- HITL Researcher Download APIs ----------------
+@app.get("/api/experiment/hitl/{session_id}/spec")
+async def download_hitl_spec(session_id: str):
+    """Return the study specification JSON for a HITL session."""
+    session = SESSIONS.get(session_id)
+    if not session:
+        for s in SESSIONS.values():
+            if s.session_id.startswith(session_id):
+                session = s; break
+    if not session:
+        return Response(
+            json.dumps({"error": "session not found"}, indent=2),
+            media_type="application/json",
+            status_code=404
+        )
+    spec = {
+        "session_id": session.session_id,
+        "builder": "ai_team_with_hitl",
+        "agent_names": session.agent_names,
+        "params": public_config(session.params),
+    }
+    return Response(
+        json.dumps(spec, indent=2, ensure_ascii=False),
+        media_type="application/json",
+        headers={"Content-Disposition": f'attachment; filename="hitl_{session_id[:8]}_study_spec.json"'}
+    )
+
+
+@app.get("/api/experiment/hitl/{session_id}/transcript")
+async def download_hitl_transcript(session_id: str):
+    """Return agent conversations + human interventions as JSON for a HITL session."""
+    session = SESSIONS.get(session_id)
+    if not session:
+        for s in SESSIONS.values():
+            if s.session_id.startswith(session_id):
+                session = s; break
+    if not session:
+        return Response(
+            json.dumps({"error": "session not found"}, indent=2),
+            media_type="application/json",
+            status_code=404
+        )
+    agent_messages = [m for m in session.history if m.get("actor_type") != "human"]
+    human_events = [m for m in session.history if m.get("actor_type") == "human"]
+    export = {
+        "session_id": session.session_id,
+        "agent_names": session.agent_names,
+        "num_agent_messages": len(agent_messages),
+        "num_human_interventions": len(human_events),
+        "agent_team_conversation": agent_messages,
+        "human_interventions": human_events,
+        "full_history": session.history,
+    }
+    return Response(
+        json.dumps(export, indent=2, ensure_ascii=False),
+        media_type="application/json",
+        headers={"Content-Disposition": f'attachment; filename="hitl_{session_id[:8]}_transcript.json"'}
+    )
+
+
 # ---------------- Pages ----------------
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
@@ -646,6 +706,10 @@ async def runs_page(request: Request, id: str): return templates.TemplateRespons
 
 @app.get("/participant/{session_id}", response_class=HTMLResponse)
 async def participant_page(request: Request, session_id: str): return templates.TemplateResponse("participant.html", {"request": request})
+
+@app.get("/hitl-dashboard", response_class=HTMLResponse)
+async def hitl_dashboard_page(request: Request):
+    return templates.TemplateResponse("hitl_dashboard.html", {"request": request})
 
 @app.get("/task-library", response_class=HTMLResponse)
 async def task_library_page(request: Request): return templates.TemplateResponse("task_library.html", {"request": request})

@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+{% block title %}HITL Researcher Dashboard{% endblock %}
+
+{% block extra_head %}
+<style>
+  main { padding: 0 !important; }
+  :root {
+    --d-navy:#1f2a44; --d-purple:#6d4aff; --d-purple2:#f3f0ff;
+    --d-green:#2f7d59; --d-green2:#edf8f2; --d-line:#e5e7eb;
+    --d-muted:#667085; --d-shadow:0 4px 20px rgba(31,42,68,.07);
+  }
+  .db-shell { max-width:1200px; margin:0 auto; padding:28px; display:flex; flex-direction:column; gap:22px; }
+  .db-hero { background:#fff; border-radius:20px; padding:24px 32px; border:1px solid var(--d-line); box-shadow:var(--d-shadow); display:flex; justify-content:space-between; align-items:flex-end; }
+  .db-hero h1 { font-size:24px; font-weight:700; color:var(--d-navy); margin:0 0 5px; }
+  .db-hero p  { font-size:13px; color:var(--d-muted); margin:0; max-width:600px; }
+  .db-tag { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:var(--d-purple); margin-bottom:6px; }
+  .db-badge { background:var(--d-purple2); color:var(--d-purple); border:1px solid #ddd6fe; padding:6px 13px; border-radius:999px; font-size:11px; font-weight:700; white-space:nowrap; }
+  .db-card { background:#fff; border-radius:16px; padding:22px 26px; border:1px solid var(--d-line); box-shadow:var(--d-shadow); }
+  .db-empty { text-align:center; padding:60px 20px; color:var(--d-muted); }
+  .db-empty .icon { font-size:48px; margin-bottom:14px; }
+  .db-table { width:100%; border-collapse:separate; border-spacing:0; font-size:13px; }
+  .db-table th { background:#f8fafc; color:#475467; font-size:11px; font-weight:600; padding:10px 12px; text-align:left; border-bottom:1px solid var(--d-line); }
+  .db-table th:first-child { border-top-left-radius:10px; }
+  .db-table th:last-child  { border-top-right-radius:10px; }
+  .db-table td { padding:12px 12px; border-bottom:1px solid #f2f4f7; color:var(--d-navy); vertical-align:middle; }
+  .db-table tr:last-child td { border-bottom:none; }
+  .db-table tr:hover td { background:#fafbfc; }
+  .db-btn { display:inline-flex; align-items:center; gap:5px; border:1px solid #d0d5dd; background:#fff; color:#344054; padding:7px 11px; border-radius:8px; font-size:11px; font-weight:600; cursor:pointer; text-decoration:none; transition:.12s; }
+  .db-btn:hover { background:#f8fafc; }
+  .db-btn.primary { background:var(--d-purple); color:#fff; border-color:var(--d-purple); }
+  .db-btn.primary:hover { background:#5b38e8; }
+  .db-btn.green { background:var(--d-green); color:#fff; border-color:var(--d-green); }
+  .db-btn.green:hover { background:#246248; }
+  .db-status-active  { display:inline-block; padding:3px 9px; border-radius:999px; font-size:11px; font-weight:600; background:#dcfce7; color:#16a34a; }
+  .db-status-done    { display:inline-block; padding:3px 9px; border-radius:999px; font-size:11px; font-weight:600; background:#ede9fe; color:#6d4aff; }
+  .db-status-stopped { display:inline-block; padding:3px 9px; border-radius:999px; font-size:11px; font-weight:600; background:#fee2e2; color:#dc2626; }
+  .db-detail { background:#f8fafc; border:1px solid var(--d-line); border-radius:12px; padding:18px 22px; display:none; margin-top:12px; }
+  .db-detail.open { display:block; }
+  .db-dl-row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top:14px; padding-top:14px; border-top:1px solid var(--d-line); }
+  .db-stat { display:inline-flex; flex-direction:column; align-items:center; background:#fff; border:1px solid var(--d-line); border-radius:10px; padding:10px 16px; min-width:90px; }
+  .db-stat strong { font-size:22px; color:var(--d-navy); font-weight:700; }
+  .db-stat span { font-size:10px; color:var(--d-muted); margin-top:2px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="db-shell">
+
+  <div class="db-hero">
+    <div>
+      <div class="db-tag">Researcher Dashboard</div>
+      <h1>HITL Session Monitor</h1>
+      <p>Monitor all participant sessions in real time. Download study specifications and conversation transcripts for completed sessions.</p>
+    </div>
+    <span class="db-badge">Human-in-the-Loop</span>
+  </div>
+
+  <div class="db-card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+      <div>
+        <div style="font-size:15px;font-weight:700;color:var(--d-navy);">Participant Sessions</div>
+        <div style="font-size:12px;color:var(--d-muted);margin-top:2px;">Click a row to expand download options and session details.</div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <a href="/hitl" class="db-btn">+ New Study</a>
+        <button class="db-btn primary" onclick="loadSessions()">↻ Refresh</button>
+      </div>
+    </div>
+    <div id="tableWrap">
+      <div class="db-empty"><div class="icon">⏳</div><div>Loading sessions…</div></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+async function loadSessions() {
+  const wrap = document.getElementById('tableWrap');
+  try {
+    const res = await fetch('/api/experiments');
+    const data = await res.json();
+    const sessions = (data.experiments || []).filter(e => e.type === 'HITL');
+
+    if (!sessions.length) {
+      wrap.innerHTML = '<div class="db-empty"><div class="icon">🧪</div><div style="font-size:15px;font-weight:600;color:#1f2a44;margin-bottom:6px;">No Sessions Yet</div><div>Create a participant session from the <a href="/hitl" style="color:#6d4aff;">HITL Builder</a> to get started.</div></div>';
+      return;
+    }
+
+    let rows = '';
+    sessions.forEach(s => {
+      const shortId = s.id.substring(0, 8);
+      const statusCls = s.status === 'active' ? 'db-status-active' : s.status === 'stopped' ? 'db-status-stopped' : 'db-status-done';
+      rows += `
+      <tr onclick="toggleDetail('${s.id}')" style="cursor:pointer;">
+        <td><code style="font-size:11px;">#${shortId}</code></td>
+        <td>${s.task_type || '—'}</td>
+        <td>${s.num_agents}</td>
+        <td>${s.team_structure || '—'}</td>
+        <td><span class="${statusCls}">${s.status}</span></td>
+        <td>
+          <div style="display:flex;gap:6px;" onclick="event.stopPropagation()">
+            <a href="/participant/${s.id}" target="_blank" class="db-btn">Open ↗</a>
+          </div>
+        </td>
+      </tr>
+      <tr id="detail-row-${s.id}" style="display:none;">
+        <td colspan="6" style="padding:0 12px 12px;">
+          <div class="db-detail open" id="detail-inner-${s.id}">
+            <div style="font-size:12px;font-weight:700;color:#1f2a44;margin-bottom:12px;">Session #${shortId} — Details &amp; Downloads</div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;">
+              <div class="db-stat"><strong>${s.num_agents}</strong><span>Agents</span></div>
+              <div class="db-stat"><strong>${s.team_structure || '—'}</strong><span>Structure</span></div>
+              <div class="db-stat" id="stat-status-${s.id}"><strong>${s.status}</strong><span>Status</span></div>
+              <div class="db-stat" id="stat-msgs-${s.id}"><strong>—</strong><span>Messages</span></div>
+              <div class="db-stat" id="stat-interventions-${s.id}"><strong>—</strong><span>Interventions</span></div>
+            </div>
+            <div style="margin-bottom:14px;padding:10px 12px;background:#fff;border:1px solid #e5e7eb;border-radius:8px;">
+              <div style="font-size:10px;color:#667085;margin-bottom:4px;font-weight:600;">Participant URL — share this with your participant:</div>
+              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                <code id="purl-${s.id}" style="font-size:11px;color:#6d4aff;word-break:break-all;flex:1;">${window.location.origin}/participant/${s.id}</code>
+                <button class="db-btn" onclick="copyUrl('${s.id}', this)">Copy Link</button>
+              </div>
+            </div>
+            <div class="db-dl-row">
+              <span style="font-size:11px;color:#667085;font-weight:700;">Download:</span>
+              <a href="/api/experiment/hitl/${s.id}/spec" download="hitl_${shortId}_study_spec.json" class="db-btn primary">
+                📄 Study Specification JSON
+              </a>
+              <a href="/api/experiment/hitl/${s.id}/transcript" download="hitl_${shortId}_transcript.json" class="db-btn green">
+                💬 Conversation Transcript JSON
+              </a>
+              <a href="/api/session/${s.id}/events.csv" download class="db-btn">
+                📊 Events Log CSV
+              </a>
+            </div>
+            <div style="margin-top:12px;font-size:11px;color:#667085;line-height:1.5;">
+              <strong>Study Specification</strong> contains the full researcher-configured parameters (task, team structure, intervention rules, LLM config).
+              <strong>Conversation Transcript</strong> contains the agent-team dialogue and all human interventions with timestamps.
+            </div>
+          </div>
+        </td>
+      </tr>`;
+    });
+
+    wrap.innerHTML = `<table class="db-table">
+      <thead><tr>
+        <th>Session ID</th><th>Task</th><th>Agents</th><th>Structure</th><th>Status</th><th>Actions</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+
+    // Fetch live stats for each session
+    sessions.forEach(s => loadSessionStats(s.id));
+  } catch(e) {
+    wrap.innerHTML = `<div class="db-empty"><div class="icon">⚠️</div><div>${e.message}</div></div>`;
+  }
+}
+
+async function loadSessionStats(sessionId) {
+  try {
+    const res = await fetch(`/api/session/${sessionId}/info`);
+    const info = await res.json();
+    if (info.error) return;
+    // We don't have live message counts from the info endpoint alone — just show agent count
+  } catch {}
+}
+
+function toggleDetail(id) {
+  const row = document.getElementById(`detail-row-${id}`);
+  if (!row) return;
+  row.style.display = row.style.display === 'none' ? 'table-row' : 'none';
+}
+
+function copyUrl(sessionId, btn) {
+  const url = `${window.location.origin}/participant/${sessionId}`;
+  navigator.clipboard.writeText(url).then(() => {
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = 'Copy Link', 2000);
+  });
+}
+
+loadSessions();
+// Auto-refresh every 15 seconds
+setInterval(loadSessions, 15000);
+</script>
+{% endblock %}

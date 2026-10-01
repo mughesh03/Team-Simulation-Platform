@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Participant Session</title>
-  <link rel="stylesheet" href="/static/style.css?v=6">
+  <link rel="stylesheet" href="/static/style.css?v=15">
   <style>
     body { background-color: var(--bg-color); }
     .main-grid {
@@ -25,6 +25,35 @@
       .main-grid { grid-template-columns: 1fr; }
       #log { min-height: 350px; }
     }
+    .typing-indicator {
+      display: flex; gap: 5px; align-items: center;
+      padding: 10px 14px; background: var(--card-bg);
+      border: 1px solid var(--card-border); border-radius: 12px;
+      width: fit-content;
+    }
+    .typing-indicator span {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--text-secondary);
+      animation: bounce 1.2s infinite;
+      display: inline-block;
+    }
+    .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+    .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes bounce {
+      0%, 80%, 100% { transform: translateY(0); }
+      40% { transform: translateY(-6px); }
+    }
+    #endSessionBtn {
+      display: none;
+      background: #ef4444;
+      color: white; border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 8px; font-weight: 600;
+      cursor: pointer; font-size: 0.85rem;
+      transition: opacity .2s;
+    }
+    #endSessionBtn:hover { opacity: 0.85; }
+    #endSessionBtn.visible { display: inline-flex; align-items: center; gap: 0.4rem; }
   </style>
 </head>
 <body>
@@ -40,9 +69,11 @@
     <strong style="color:var(--accent);">How it works:</strong>
     <ul style="margin:0.5rem 0 0 1.2rem; color:var(--text-secondary);">
       <li>You will observe an AI team discussing a task.</li>
+      <li>Agent messages appear at a natural reading pace.</li>
       <li>Click <strong>Pause Team</strong> to stop the discussion and intervene.</li>
       <li>Type your message and send it to the whole team or a specific agent.</li>
       <li>Click <strong>Resume Team</strong> to continue the discussion.</li>
+      <li>Click <strong>End Session</strong> when you are ready to finish.</li>
     </ul>
   </div>
   <button id="beginBtn" class="button mt-8" style="width:100%; font-size:1.2rem; padding:1rem; background:var(--accent);">▶ Begin Session</button>
@@ -57,10 +88,11 @@
         <h2 style="margin:0;">AI Team Discussion</h2>
         <span style="font-size:0.85rem; color:var(--text-secondary);">Round: <strong id="roundCounter">—</strong> · Messages: <strong id="msgCounter">0</strong></span>
       </div>
-      <div style="display:flex; gap:0.5rem; align-items:center;">
+      <div style="display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
         <span id="statusBadge" class="status running">Running</span>
         <button id="pauseBtn" class="button danger" style="font-size:0.85rem;">⏸ Pause Team</button>
         <button id="resumeBtn" class="button" style="display:none; font-size:0.85rem; background:var(--success);">▶ Resume Team</button>
+        <button id="endSessionBtn">⏹ End Session</button>
       </div>
     </div>
     <div id="log"></div>
@@ -109,25 +141,78 @@ let humanMsgCount = 0;
 let currentRound = 0;
 let agentNames = [];
 
+// Reading-speed message queue
+let messageQueue = [];
+let isDisplaying = false;
+let sessionDoneData = null;
+
 const log       = document.getElementById('log');
 const badge     = document.getElementById('statusBadge');
 const pauseBtn  = document.getElementById('pauseBtn');
 const resumeBtn = document.getElementById('resumeBtn');
 const panel     = document.getElementById('interventionPanel');
 const input     = document.getElementById('interventionInput');
+const endBtn    = document.getElementById('endSessionBtn');
+
+/* ─── Reading-speed delay ──────────────────────────────────── */
+function readingDelay(text) {
+  const words = (text || '').split(/\s+/).filter(Boolean).length;
+  return Math.min(8000, Math.max(1500, words * 200));
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+/* ─── Message Queue ─────────────────────────────────────────── */
+function enqueueMessage(data) {
+  messageQueue.push(data);
+  if (!isDisplaying) processQueue();
+}
+
+async function processQueue() {
+  if (messageQueue.length === 0) { isDisplaying = false; return; }
+  isDisplaying = true;
+  const data = messageQueue.shift();
+  const delay = readingDelay(data.text);
+
+  // Show typing indicator
+  const typingEl = document.createElement('div');
+  typingEl.className = 'log-line';
+  typingEl.innerHTML = `
+    <span style="font-size:0.75rem;color:var(--text-secondary);margin-bottom:4px;display:block;">${data.agent} is typing…</span>
+    <div class="typing-indicator"><span></span><span></span><span></span></div>`;
+  log.appendChild(typingEl);
+  log.scrollTop = log.scrollHeight;
+
+  await sleep(delay);
+  log.removeChild(typingEl);
+  renderMessage(data);
+  await sleep(300);
+  processQueue();
+}
+
+function renderMessage(data) {
+  const isHuman = data.agent === 'Human' || data.actor_type === 'human';
+  const cls = isHuman ? 'log-human' : 'log-agent';
+  const modelTag = data.model ? ` <span style="font-size:0.68rem; background:rgba(35,45,75,0.08); padding:1px 5px; border-radius:3px;">${data.model}</span>` : '';
+  const groupTag = data.group ? ` <span style="font-size:0.68rem; background:rgba(229,114,0,0.1); color:var(--accent); padding:1px 5px; border-radius:3px;">${data.group}</span>` : '';
+  const line = document.createElement('div');
+  line.className = `log-line ${cls}`;
+  line.innerHTML = `<strong style="color:${isHuman?'var(--accent)':'var(--primary)'};">${data.agent}${modelTag}${groupTag}</strong> ${data.text}`;
+  log.appendChild(line);
+  log.scrollTop = log.scrollHeight;
+  if (isHuman) { humanMsgCount++; } else { agentMsgCount++; }
+  if (data.round !== undefined && data.round !== null) currentRound = data.round + 1;
+  updateStats();
+}
 
 /* ─── Load session info ─────────────────────────────────────── */
 (async function() {
-  // Try full ID first, then short code
   let res = await fetch(`/api/session/${sessionId}/info`);
   let info = await res.json();
   if (info.error) return;
-
   agentNames = info.agent_names || [];
   const instructions = info.instructions || info.params?.intervention_rules?.instructions || 'Observe the AI team and intervene when you feel it is appropriate.';
   document.getElementById('instructionText').innerText = instructions;
-
-  // Build agent-specific buttons
   const btnContainer = document.getElementById('agentButtons');
   agentNames.forEach(name => {
     const btn = document.createElement('button');
@@ -150,45 +235,28 @@ document.getElementById('beginBtn').addEventListener('click', () => {
 function connectWebSocket() {
   const proto = location.protocol === 'https:' ? 'wss' : 'ws';
   ws = new WebSocket(`${proto}://${location.host}/ws/session/${sessionId}`);
-
   ws.onopen = () => addSystemLine('Connected to session. AI team is starting…');
 
   ws.onmessage = (evt) => {
     const data = JSON.parse(evt.data);
-
     if (data.type === 'message') {
       const isHuman = data.agent === 'Human' || data.actor_type === 'human';
-      const cls = isHuman ? 'log-human' : 'log-agent';
-      const modelTag = data.model ? ` <span style="font-size:0.68rem; background:rgba(35,45,75,0.08); padding:1px 5px; border-radius:3px;">${data.model}</span>` : '';
-      const groupTag = data.group ? ` <span style="font-size:0.68rem; background:rgba(229,114,0,0.1); color:var(--accent); padding:1px 5px; border-radius:3px;">${data.group}</span>` : '';
-
-      const line = document.createElement('div');
-      line.className = `log-line ${cls}`;
-      line.innerHTML = `<strong style="color:${isHuman?'var(--accent)':'var(--primary)'};">${data.agent}${modelTag}${groupTag}</strong> ${data.text}`;
-      log.appendChild(line);
-      log.scrollTop = log.scrollHeight;
-
-      if (isHuman) { humanMsgCount++; } else { agentMsgCount++; }
-      if (data.round !== undefined && data.round !== null) currentRound = data.round + 1;
-
-      updateStats();
-
+      if (isHuman) {
+        renderMessage(data); // Human messages appear immediately
+      } else {
+        enqueueMessage(data); // Agent messages are throttled
+      }
     } else if (data.type === 'status') {
       addSystemLine(`Status: ${data.text}`);
-
     } else if (data.type === 'done') {
-      addSystemLine('Session complete!');
-      document.getElementById('mainInterface').style.display = 'none';
-      document.getElementById('completionScreen').style.display = 'block';
-      const summary = data.summary || {};
-      document.getElementById('summaryContent').innerHTML = `
-        <div class="flex-between"><span>Total Turns:</span><strong>${summary.num_turns || 0}</strong></div>
-        <div class="flex-between mt-2"><span>Agent Messages:</span><strong>${summary.num_agent_turns || 0}</strong></div>
-        <div class="flex-between mt-2"><span>Your Interventions:</span><strong style="color:var(--accent);">${summary.num_human_events || 0}</strong></div>
-        <div class="flex-between mt-2"><span>Agreement Score:</span><strong style="color:var(--success);">${(summary.agreement_score || summary.toy_agreement_score || 0).toFixed(3)}</strong></div>
-        <div class="flex-between mt-2"><span>Total Tokens:</span><strong>${(summary.total_tokens || 0).toLocaleString()}</strong></div>
-      `;
-
+      // Don't transition yet — store data and prompt user to end session manually
+      sessionDoneData = data;
+      addSystemLine('✓ AI team has finished their discussion. Click "End Session" when you are ready.');
+      endBtn.classList.add('visible');
+      badge.className = 'status paused';
+      badge.innerText = 'COMPLETE';
+      pauseBtn.style.display = 'none';
+      resumeBtn.style.display = 'none';
     } else if (data.type === 'error') {
       addSystemLine(`Error: ${data.text}`);
     }
@@ -197,6 +265,22 @@ function connectWebSocket() {
   ws.onclose = () => addSystemLine('Connection closed.');
   ws.onerror = () => addSystemLine('WebSocket error.');
 }
+
+/* ─── End Session button ────────────────────────────────────── */
+endBtn.addEventListener('click', () => {
+  const data = sessionDoneData || {};
+  document.getElementById('mainInterface').style.display = 'none';
+  document.getElementById('completionScreen').style.display = 'block';
+  const summary = data.summary || {};
+  document.getElementById('summaryContent').innerHTML = `
+    <div class="flex-between"><span>Total Turns:</span><strong>${summary.num_turns || (agentMsgCount + humanMsgCount)}</strong></div>
+    <div class="flex-between mt-2"><span>Agent Messages:</span><strong>${summary.num_agent_turns || agentMsgCount}</strong></div>
+    <div class="flex-between mt-2"><span>Your Interventions:</span><strong style="color:var(--accent);">${summary.num_human_events || humanMsgCount}</strong></div>
+    <div class="flex-between mt-2"><span>Agreement Score:</span><strong style="color:var(--success);">${(summary.agreement_score || summary.toy_agreement_score || 0).toFixed(3)}</strong></div>
+    <div class="flex-between mt-2"><span>Total Tokens:</span><strong>${(summary.total_tokens || 0).toLocaleString()}</strong></div>
+  `;
+  if (ws) ws.close();
+});
 
 function addSystemLine(text) {
   const line = document.createElement('div');
