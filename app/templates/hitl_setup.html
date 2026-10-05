@@ -179,14 +179,14 @@
    ================================================================ */
 
 const STEPS = [
-  ['Research Design',         'Phenomenon & question'],
-  ['Organizational Structure','Interdependence'],
-  ['Task Configuration',      'Base task or custom'],
-  ['AI Team Configuration',   'Agents, rounds & context'],
-  ['Human Intervention Rules','Pause & message'],
-  ['Simulation Settings',     'Replications & metadata'],
-  ['LLM Configuration',       'Models, API key & demo'],
-  ['Review & Launch',         'Verify, save & create session']
+  ['Research Design',                'Study title &amp; question'],
+  ['Task Interdependence Structure', 'Interdependence'],
+  ['Task Configuration',            'Base task or custom'],
+  ['AI Team Configuration',         'Agents, rounds &amp; context'],
+  ['Human Intervention Rules',      'Pause &amp; message'],
+  ['Simulation Settings',           'Replications &amp; metadata'],
+  ['LLM Configuration',             'Models, API key &amp; demo'],
+  ['Review &amp; Launch',           'Verify, save &amp; create session']
 ];
 
 const st = {
@@ -250,18 +250,12 @@ function navBtns(label='Continue') {
 function renderResearch() {
   return `
   <div class="pb-section-head">
-    <div><h2>1. Research Design</h2><p>Define the organizational phenomenon and research question for this study.</p></div>
+    <div><h2>1. Research Design</h2><p>Define the study title and research question for this study.</p></div>
     <span class="pb-badge">Research design</span>
   </div>
   <div class="pb-field">
-    <label>Organizational Phenomenon</label>
-    <select onchange="st.phenomenon=this.value">
-      <option${sel(st.phenomenon,'Coordination under distributed expertise')}>Coordination under distributed expertise</option>
-      <option${sel(st.phenomenon,'Information sharing and integration')}>Information sharing and integration</option>
-      <option${sel(st.phenomenon,'Human intervention in AI teams')}>Human intervention in AI teams</option>
-      <option${sel(st.phenomenon,'Team creativity and innovation')}>Team creativity and innovation</option>
-      <option${sel(st.phenomenon,'Custom / other organizational phenomenon')}>Custom / other organizational phenomenon</option>
-    </select>
+    <label>Study Title</label>
+    <input value="${esc(st.phenomenon)}" placeholder="e.g. Coordination under distributed expertise" oninput="st.phenomenon=this.value">
   </div>
   <div class="pb-field">
     <label>Research Question</label>
@@ -270,19 +264,23 @@ function renderResearch() {
   ${navBtns()}`;
 }
 
-/* ── Step 2: Structure ── */
+/* ── Step 2: Task Interdependence Structure ── */
 function structDiagram(name) {
-  if(name==='Pooled') return `<div class="pb-diagram"><span class="pb-node">A</span><span class="pb-arrow">↘</span><span class="pb-node">Σ</span><span class="pb-arrow">↙</span><span class="pb-node">C</span></div>`;
+  // Pooled: 4 independent members each feeding into a shared output
+  if(name==='Pooled') return `<div class="pb-diagram" style="flex-direction:column;gap:4px;"><div style="display:flex;align-items:center;gap:6px;"><div style="display:flex;flex-direction:column;gap:4px;"><span class="pb-node">A</span><span class="pb-node">B</span><span class="pb-node">C</span><span class="pb-node">D</span></div><div style="display:flex;flex-direction:column;gap:2px;color:#7a8699;font-size:13px;">↘<span style="visibility:hidden;">↘</span>↗<span style="visibility:hidden;">↗</span></div><span class="pb-node" style="background:#e8e4ff;">Σ</span></div><span style="font-size:10px;color:#667085;">independent → aggregated output</span></div>`;
+  // Sequential: A → B → C → D pipeline handoff
   if(name==='Sequential') return `<div class="pb-diagram"><span class="pb-node">A</span><span class="pb-arrow">→</span><span class="pb-node">B</span><span class="pb-arrow">→</span><span class="pb-node">C</span><span class="pb-arrow">→</span><span class="pb-node">D</span></div>`;
+  // Reciprocal: 2×2 grid with bidirectional arrows
   if(name==='Reciprocal') return `<div class="pb-diagram" style="flex-direction:column;gap:4px;"><div style="display:flex;align-items:center;gap:4px;"><span class="pb-node">A</span><span class="pb-arrow">⇄</span><span class="pb-node">B</span></div><div style="color:#7a8699;font-size:11px;display:flex;gap:28px;margin-left:6px;">↕ ↕</div><div style="display:flex;align-items:center;gap:4px;"><span class="pb-node">D</span><span class="pb-arrow">⇄</span><span class="pb-node">C</span></div></div>`;
-  return `<div class="pb-diagram" style="flex-direction:column;gap:4px;"><span style="font-size:10px;color:#667085;">shared task</span><div style="display:flex;align-items:center;gap:4px;"><span class="pb-node">A</span><span class="pb-arrow">⇄</span><span class="pb-node">B</span><span class="pb-arrow">⇄</span><span class="pb-node">C</span></div><span style="font-size:10px;color:#667085;">continuous mutual adjustment</span></div>`;
+  // Team (Intensive): all 4 members mutually adjusting on shared task
+  return `<div class="pb-diagram" style="flex-direction:column;gap:4px;"><span style="font-size:10px;color:#667085;">shared task</span><div style="display:flex;align-items:center;gap:4px;"><span class="pb-node">A</span><span class="pb-arrow">⇄</span><span class="pb-node">B</span><span class="pb-arrow">⇄</span><span class="pb-node">C</span><span class="pb-arrow">⇄</span><span class="pb-node">D</span></div><span style="font-size:10px;color:#667085;">continuous mutual adjustment</span></div>`;
 }
 
 function renderStructure() {
-  const structs=[['Pooled','Members work independently; contributions are aggregated.','Independent contribution','Aggregation'],['Sequential','Work is passed through structured handoffs.','Workflow order','Handoffs'],['Reciprocal','Members iteratively exchange outputs and adapt to one another.','Bidirectional dependence','Iterative coordination'],['Team','Members coordinate jointly through continuous mutual adjustment.','Intensive dependence','Joint adjustment']];
+  const structs=[['Pooled','Members work independently; contributions are aggregated into a shared output.','Independent contribution','Aggregation'],['Sequential','Work is passed through structured handoffs in a fixed pipeline order.','Workflow order','Handoffs'],['Reciprocal','Members iteratively exchange outputs and adapt to one another.','Bidirectional dependence','Iterative coordination'],['Team','Members coordinate jointly through continuous mutual adjustment on a shared task.','Intensive dependence','Joint adjustment']];
   return `
   <div class="pb-section-head">
-    <div><h2>2. Organizational Structure</h2><p>Select the interdependence structure that determines how work and information flow among agents.</p></div>
+    <div><h2>2. Task Interdependence Structure</h2><p>Select the interdependence structure that determines how work and information flow among agents.</p></div>
     <span class="pb-badge">Interdependence</span>
   </div>
   <div class="pb-field">
@@ -302,10 +300,10 @@ function renderStructure() {
 /* ── Step 3: Task ── */
 function renderTask() {
   const tasks=[
-    ['Hidden-Profile Decision Task','Information Integration','Unique + shared clues distributed across members; success requires surfacing unique information.','Information sharing','Expertise recognition','Objective scoring'],
-    ['Specialist Coordination Task','Distributed Expertise','Members hold differentiated expertise required for a joint solution.','Specialization','Coordination','Expertise utilization'],
-    ['Ranking / Selection Task','Judgment & Decision Making','Teams compare alternatives using distributed criteria.','Consensus','Decision quality','Process trace'],
-    ['Idea Generation + Evaluation','Creativity & Innovation','Separate divergence and convergence phases for studying novelty and selection.','Creativity','Mutual adjustment','Evaluation'],
+    ['Hidden-Profile Decision Task','Information Integration',"Unique and shared 'information' is distributed across members; success requires surfacing and integrating unique information.",'Information sharing','Expertise recognition','Objective scoring'],
+    ['Specialist Coordination Task','Distributed Expertise','Members hold differentiated expertise required for a joint solution. Each specialist contributes domain-specific knowledge toward a shared outcome.','Specialization','Coordination','Expertise utilization'],
+    ['Ranking / Selection Task','Judgment &amp; Decision Making','Teams compare alternatives using distributed criteria.','Consensus','Decision quality','Process trace'],
+    ['Idea Generation + Evaluation','Creativity &amp; Innovation','Separate divergence and convergence phases for studying novelty and selection.','Creativity','Mutual adjustment','Evaluation'],
     ['Custom Task','Researcher Defined','Bring your own task prompt, instructions, scenario, and optional scoring guidance.','Custom prompt','Custom domain','Custom scoring']
   ];
   return `
