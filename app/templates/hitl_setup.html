@@ -204,6 +204,7 @@ const st = {
     'Integrator. Receives unique evidence C and looks for connections across contributions.',
     'Generalist. Receives unique evidence D and focuses on the overall team objective.'
   ],
+  reporterAgent: 'None',
   hitlTiming: 'Any time',
   hitlPause: true, hitlResume: true,
   hitlOne: true, hitlMultiple: true, hitlTeam: true,
@@ -363,6 +364,14 @@ function renderTeam() {
       <div class="pb-field" style="margin:0;"><textarea oninput="st.agentDetails[${i}]=this.value" placeholder="Agent ${i+1} instructions, information, persona, expertise, or other context...">${esc(st.agentDetails[i]||'')}</textarea></div>
     </div>`).join('')}
   </div>`}
+  <div class="pb-field">
+    <label>Designated Reporter Agent (optional)</label>
+    <select onchange="st.reporterAgent=this.value">
+      <option${sel(st.reporterAgent,'None')}>None</option>
+      ${Array.from({length: st.agents}, (_, i) => `<option${sel(st.reporterAgent,String(i+1))}>Agent ${i+1}</option>`).join('')}
+    </select>
+    <div class="pb-note">Select which agent is responsible for organizing the output of the team into a final report.</div>
+  </div>
   ${navBtns()}`;
 }
 
@@ -488,7 +497,7 @@ function protocolObj(){
   const obj={builder:'ai_team_with_hitl',research_question:st.researchQuestion,phenomenon:st.phenomenon,task:{type:st.task,name:displayTask(),scored:st.taskScored==='Yes'}};
   if(st.task==='Custom Task'){obj.task.prompt=st.customTaskPrompt;if(st.taskScored==='Yes')obj.task.scoring=st.customTaskScoring;}
   obj.organizational_structure=st.structure;
-  obj.team={agents:Number(st.agents),discussion_rounds:Number(st.rounds),composition:st.composition,instructions:st.composition==='Homogeneous agents'?[st.agentDetails[0]||'']:st.agentDetails.slice(0,st.agents)};
+  obj.team={agents:Number(st.agents),discussion_rounds:Number(st.rounds),composition:st.composition,reporter_agent:st.reporterAgent==='None'?null:parseInt(st.reporterAgent),instructions:st.composition==='Homogeneous agents'?[st.agentDetails[0]||'']:st.agentDetails.slice(0,st.agents)};
   obj.human_in_the_loop={intervention_timing:st.hitlTiming,can_pause_resume:st.hitlPause,message_recipients:{one_agent:st.hitlOne,multiple_agents:st.hitlMultiple,entire_team:st.hitlTeam},resume_after_message:st.hitlResume,participant_instructions:st.participantInstructions};
   obj.session={sessions:Number(st.reps),concurrency:Number(st.concurrency),seed:st.seed,experiment_label:st.conditionName,researcher_notes:st.researcherNotes};
   obj.llm={assignment:st.llmAssignment,temperature:Number(st.temperature),max_output_tokens:Number(st.maxTokens),base_url:st.baseURL||null,timeout_seconds:Number(st.timeout)};
@@ -612,6 +621,7 @@ async function pbLaunch() {
       num_agents: st.agents, 
       num_rounds: st.rounds,
       structure: st.structure.toLowerCase(),
+      reporter_agent: st.reporterAgent === 'None' ? null : parseInt(st.reporterAgent),
       agent_configs: (st.composition==='Homogeneous agents'?Array(st.agents).fill(st.agentDetails[0]||''):st.agentDetails.slice(0,st.agents)).map((desc, i) => ({ agent_id: i + 1, description: desc }))
     },
     intervention_rules: {

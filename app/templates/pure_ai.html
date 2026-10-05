@@ -364,6 +364,7 @@ const st = {
     'Integrator. Receives unique evidence C and looks for connections across contributions.',
     'Generalist. Receives unique evidence D and focuses on the overall team objective.'
   ],
+  reporterAgent: 'None',
   reps: 50, concurrency: 4, seed: '2026', conditionName: 'Main condition', researcherNotes: '',
   llmAssignment: 'Same model for all agents',
   provider: 'Mock', model: 'Mock Backend (Demo)', apiKey: '',
@@ -609,6 +610,14 @@ function renderTeam() {
       </div>
     </div>`).join('')}
   </div>`}
+  <div class="pb-field">
+    <label>Designated Reporter Agent (optional)</label>
+    <select onchange="st.reporterAgent=this.value">
+      <option${sel(st.reporterAgent,'None')}>None</option>
+      ${Array.from({length: st.agents}, (_, i) => `<option${sel(st.reporterAgent,String(i+1))}>Agent ${i+1}</option>`).join('')}
+    </select>
+    <div class="pb-note">Select which agent is responsible for organizing the output of the team into a final report.</div>
+  </div>
   ${navBtns()}`;
 }
 
@@ -773,6 +782,7 @@ function protocolObj() {
   obj.team = {
     agents: Number(st.agents), discussion_rounds: Number(st.rounds),
     composition: st.composition,
+    reporter_agent: st.reporterAgent === 'None' ? null : parseInt(st.reporterAgent),
     instructions: st.composition === 'Homogeneous agents' ? [st.agentDetails[0] || ''] : st.agentDetails.slice(0, st.agents)
   };
   obj.simulation = {
@@ -966,6 +976,7 @@ async function pbLaunch() {
       num_agents: st.agents,
       num_rounds: st.rounds,
       structure: st.structure.toLowerCase(),
+      reporter_agent: st.reporterAgent === 'None' ? null : parseInt(st.reporterAgent),
       agent_configs: agentInstructions.map((desc, i) => ({ agent_id: i + 1, description: desc }))
     }
   };

@@ -285,10 +285,10 @@ def _system_prompt(agent_name: str, model: str, params: dict) -> str:
     agent_configs = params.get("agent_configs") or []
     my_config = {}
     try:
-        agent_id = int(agent_name.replace("Agent ", ""))
+        agent_id = int(agent_name.replace("Agent_", "").replace("Agent ", ""))
         my_config = next((c for c in agent_configs if c["agent_id"] == agent_id), {})
     except ValueError:
-        pass
+        agent_id = None
         
     my_desc = my_config.get("description", "").strip()
     my_struct = my_config.get("structure", params.get("team_structure", "sequential"))
@@ -300,6 +300,9 @@ def _system_prompt(agent_name: str, model: str, params: dict) -> str:
         f"Interdependence structure: {my_struct}.",
         f"Task: {task}",
     ]
+    if agent_id and params.get("reporter_agent") == agent_id:
+        parts.append("You are the DESIGNATED REPORTER for the team. It is your responsibility to organize the team's final output into a coherent report.")
+    
     if custom:
         parts.append(f"Researcher task prompt: {custom}")
     if per_model:
