@@ -3,37 +3,213 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Participant Session</title>
-  <link rel="stylesheet" href="/static/style.css?v=15">
+  <title>Participant Session — Human-in-the-Loop Study</title>
+  <link rel="stylesheet" href="/static/style.css?v=16">
   <style>
-    body { background-color: var(--bg-color); }
+    body { background-color: var(--bg-color, #f8fafc); }
     .main-grid {
       display: grid;
       grid-template-columns: 2fr 1fr;
       gap: 1.5rem;
-      max-width: 1400px;
+      max-width: 1440px;
       margin: 0 auto;
-      padding: 2rem;
+      padding: 1.75rem 2rem;
       min-height: calc(100vh - 4rem);
     }
     .chat-section { display: flex; flex-direction: column; height: 100%; }
-    #log { height: auto; flex: 1; min-height: 400px; border-color: var(--card-border); }
-    .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem; }
-    .intervention-card { display: flex; flex-direction: column; gap: 1rem; }
-    .intervention-disabled { opacity: 0.4; pointer-events: none; }
-    @media (max-width: 900px) {
-      .main-grid { grid-template-columns: 1fr; }
-      #log { min-height: 350px; }
+    #log {
+      height: auto;
+      flex: 1;
+      min-height: 480px;
+      max-height: calc(100vh - 220px);
+      overflow-y: auto;
+      border-color: var(--card-border);
+      background: #ffffff;
+      padding: 1.25rem;
+      border-radius: 12px;
+      box-shadow: inset 0 1px 3px rgba(0,0,0,0.03);
     }
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      background: #ffffff;
+      padding: 0.85rem 1.25rem;
+      border-radius: 12px;
+      border: 1px solid var(--card-border, #e2e8f0);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+    .intervention-card {
+      display: flex;
+      flex-direction: column;
+      gap: 0.9rem;
+      transition: all 0.25s ease;
+      background: #ffffff;
+      border-radius: 14px;
+      padding: 1.25rem;
+      border: 2px solid #e2e8f0;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.05);
+    }
+    .intervention-card.active-pulse {
+      border-color: #6366f1 !important;
+      box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15), 0 8px 24px rgba(99, 102, 241, 0.12) !important;
+    }
+    .intervention-disabled {
+      opacity: 0.45;
+      pointer-events: none;
+      filter: grayscale(20%);
+    }
+
+    /* Recipient selection pills */
+    .recipient-pills-label {
+      font-size: 0.82rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #64748b;
+      margin-bottom: 0.35rem;
+    }
+    .recipient-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      margin-bottom: 0.5rem;
+    }
+    .recipient-pill {
+      border: 1px solid #cbd5e1;
+      background: #f8fafc;
+      color: #334155;
+      padding: 0.4rem 0.75rem;
+      border-radius: 999px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      transition: all 0.18s ease;
+      user-select: none;
+    }
+    .recipient-pill:hover {
+      background: #f1f5f9;
+      border-color: #94a3b8;
+      color: #0f172a;
+    }
+    .recipient-pill.active {
+      background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+      color: #ffffff;
+      border-color: #4338ca;
+      box-shadow: 0 2px 8px rgba(79, 70, 229, 0.3);
+    }
+    .recipient-indicator {
+      font-size: 0.8rem;
+      color: #4f46e5;
+      background: #eef2ff;
+      border: 1px solid #e0e7ff;
+      padding: 0.35rem 0.65rem;
+      border-radius: 6px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    /* Badges */
+    .badge-pill {
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      white-space: nowrap;
+    }
+    .timing-badge {
+      background: #eef2ff;
+      color: #4338ca;
+      border: 1px solid #c7d2fe;
+    }
+    .role-badge {
+      background: #fef3c7;
+      color: #92400e;
+      border: 1px solid #fde68a;
+    }
+
+    /* Primary buttons */
+    .btn-intervene-trigger {
+      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+      color: #ffffff;
+      border: none;
+      font-weight: 700;
+      padding: 0.55rem 1.15rem;
+      border-radius: 8px;
+      font-size: 0.88rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      box-shadow: 0 2px 8px rgba(217, 119, 6, 0.28);
+      transition: all 0.2s ease;
+    }
+    .btn-intervene-trigger:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 14px rgba(217, 119, 6, 0.38);
+    }
+    .btn-resume-trigger {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: #ffffff;
+      border: none;
+      font-weight: 700;
+      padding: 0.55rem 1.15rem;
+      border-radius: 8px;
+      font-size: 0.88rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      box-shadow: 0 2px 8px rgba(16, 185, 129, 0.28);
+      transition: all 0.2s ease;
+    }
+    .btn-resume-trigger:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 14px rgba(16, 185, 129, 0.38);
+    }
+    .btn-continue-round {
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+      color: #ffffff;
+      border: none;
+      font-weight: 700;
+      padding: 0.65rem 1rem;
+      border-radius: 8px;
+      font-size: 0.88rem;
+      cursor: pointer;
+      width: 100%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+      box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
+      transition: all 0.2s ease;
+    }
+    .btn-continue-round:hover {
+      background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+      transform: translateY(-1px);
+    }
+
+    /* Typing indicator */
     .typing-indicator {
       display: flex; gap: 5px; align-items: center;
-      padding: 10px 14px; background: var(--card-bg);
-      border: 1px solid var(--card-border); border-radius: 12px;
-      width: fit-content;
+      padding: 8px 14px; background: #f1f5f9;
+      border: 1px solid #e2e8f0; border-radius: 12px;
+      width: fit-content; margin-top: 4px;
     }
     .typing-indicator span {
-      width: 7px; height: 7px; border-radius: 50%;
-      background: var(--text-secondary);
+      width: 6px; height: 6px; border-radius: 50%;
+      background: #64748b;
       animation: bounce 1.2s infinite;
       display: inline-block;
     }
@@ -41,42 +217,162 @@
     .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
     @keyframes bounce {
       0%, 80%, 100% { transform: translateY(0); }
-      40% { transform: translateY(-6px); }
+      40% { transform: translateY(-5px); }
     }
+
+    /* Modal for After Each Round */
+    .modal-backdrop {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(15, 23, 42, 0.7);
+      backdrop-filter: blur(6px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 99999;
+      animation: fadeIn 0.2s ease-out;
+    }
+    .modal-card {
+      background: #ffffff;
+      border-radius: 20px;
+      padding: 2.25rem 2.5rem;
+      max-width: 520px;
+      width: 90%;
+      text-align: center;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(0, 0, 0, 0.05);
+      animation: popUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .modal-icon {
+      width: 58px; height: 58px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%);
+      color: #4f46e5;
+      font-size: 1.6rem;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 1rem;
+      box-shadow: 0 4px 12px rgba(79, 70, 229, 0.15);
+    }
+    .modal-badge {
+      display: inline-block;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #4f46e5;
+      background: #eef2ff;
+      padding: 3px 10px;
+      border-radius: 999px;
+      margin-bottom: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .modal-title {
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: #0f172a;
+      margin: 0 0 0.5rem;
+    }
+    .modal-desc {
+      font-size: 0.95rem;
+      color: #475569;
+      line-height: 1.55;
+      margin: 0 0 1.75rem;
+    }
+    .modal-actions {
+      display: flex;
+      gap: 0.85rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .modal-btn {
+      padding: 0.8rem 1.4rem;
+      font-size: 0.95rem;
+      font-weight: 700;
+      border-radius: 10px;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .modal-btn-yes {
+      background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+      color: #ffffff;
+      box-shadow: 0 4px 14px rgba(79, 70, 229, 0.35);
+    }
+    .modal-btn-yes:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 18px rgba(79, 70, 229, 0.45);
+    }
+    .modal-btn-no {
+      background: #f1f5f9;
+      color: #334155;
+      border: 1px solid #cbd5e1;
+    }
+    .modal-btn-no:hover {
+      background: #e2e8f0;
+      color: #0f172a;
+      transform: translateY(-2px);
+    }
+    .modal-footer-hint {
+      margin-top: 1.25rem;
+      font-size: 0.78rem;
+      color: #94a3b8;
+    }
+
     #endSessionBtn {
       display: none;
       background: #ef4444;
       color: white; border: none;
-      padding: 0.5rem 1rem;
-      border-radius: 8px; font-weight: 600;
+      padding: 0.55rem 1rem;
+      border-radius: 8px; font-weight: 700;
       cursor: pointer; font-size: 0.85rem;
       transition: opacity .2s;
     }
-    #endSessionBtn:hover { opacity: 0.85; }
+    #endSessionBtn:hover { opacity: 0.88; }
     #endSessionBtn.visible { display: inline-flex; align-items: center; gap: 0.4rem; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    @keyframes popUp {
+      from { opacity: 0; transform: scale(0.92) translateY(12px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    @media (max-width: 900px) {
+      .main-grid { grid-template-columns: 1fr; padding: 1rem; }
+      #log { min-height: 380px; }
+    }
   </style>
 </head>
 <body>
 
 <!-- ==================== Entry Screen ==================== -->
-<div id="entryScreen" style="max-width:620px; margin:4rem auto; padding:2rem;" class="card">
-  <h1 style="font-size:1.8rem; text-align:center;">Welcome to the Study</h1>
-  <div class="mt-4" style="background:rgba(35,45,75,0.05); padding:1.5rem; border-radius:var(--radius-md);">
-    <h3 style="color:var(--primary); margin-bottom:0.5rem;">Instructions</h3>
-    <p id="instructionText" style="white-space:pre-wrap;">Loading instructions…</p>
+<div id="entryScreen" style="max-width:640px; margin:3.5rem auto; padding:2.25rem;" class="card">
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+    <span class="badge-pill timing-badge" id="entryTimingBadge">Timing: Loading…</span>
+    <span class="badge-pill role-badge" id="entryRoleBadge" style="display:none;">Human Participant</span>
   </div>
-  <div class="mt-4" style="background:rgba(229,114,0,0.06); padding:1rem; border-radius:var(--radius-md); font-size:0.9rem;">
-    <strong style="color:var(--accent);">How it works:</strong>
-    <ul style="margin:0.5rem 0 0 1.2rem; color:var(--text-secondary);">
-      <li>You will observe an AI team discussing a task.</li>
-      <li>Agent messages appear at a natural reading pace.</li>
-      <li>Click <strong>Pause Team</strong> to stop the discussion and intervene.</li>
-      <li>Type your message and send it to the whole team or a specific agent.</li>
-      <li>Click <strong>Resume Team</strong> to continue the discussion.</li>
-      <li>Click <strong>End Session</strong> when you are ready to finish.</li>
+  <h1 style="font-size:1.85rem; font-weight:800; color:var(--p-navy, #0f172a); margin:0 0 0.5rem;">Welcome to the AI Team Study</h1>
+  <p style="color:var(--text-secondary, #64748b); margin:0 0 1.25rem; font-size:0.95rem;">You will observe an AI team collaborate on a task and have opportunities to intervene.</p>
+
+  <div style="background:rgba(35,45,75,0.04); padding:1.25rem; border-radius:12px; border:1px solid #e2e8f0;">
+    <h3 style="color:var(--primary, #1e293b); margin:0 0 0.5rem; font-size:1rem;">Participant Instructions</h3>
+    <p id="instructionText" style="white-space:pre-wrap; margin:0; font-size:0.9rem; color:#334155; line-height:1.5;">Loading instructions…</p>
+  </div>
+
+  <div class="mt-4" style="background:rgba(99,102,241,0.06); padding:1.25rem; border-radius:12px; border:1px solid #e0e7ff; font-size:0.9rem;">
+    <strong style="color:#4f46e5; display:block; margin-bottom:0.4rem;">How intervention works for this session:</strong>
+    <ul id="entryHowItWorks" style="margin:0 0 0 1.2rem; color:#475569; line-height:1.6;">
+      <li>Agent messages appear sequentially at natural reading speed.</li>
+      <li>You can intervene and send your message to <strong>All Agents</strong> or choose a <strong>Specific Agent</strong>.</li>
+      <li>The discussion resumes with your guidance incorporated.</li>
     </ul>
   </div>
-  <button id="beginBtn" class="button mt-8" style="width:100%; font-size:1.2rem; padding:1rem; background:var(--accent);">▶ Begin Session</button>
+
+  <button id="beginBtn" class="button mt-8" style="width:100%; font-size:1.15rem; font-weight:700; padding:1rem; background:linear-gradient(135deg, #4f46e5 0%, #6366f1 100%); color:#fff; border-radius:10px; border:none; box-shadow:0 4px 14px rgba(79,70,229,0.3); cursor:pointer;">
+    ▶ Begin Session
+  </button>
 </div>
 
 <!-- ==================== Main Interface ==================== -->
@@ -85,109 +381,236 @@
   <div class="chat-section">
     <div class="top-bar">
       <div>
-        <h2 style="margin:0;">AI Team Discussion</h2>
-        <span style="font-size:0.85rem; color:var(--text-secondary);">Round: <strong id="roundCounter">—</strong> · Messages: <strong id="msgCounter">0</strong></span>
+        <h2 style="margin:0; font-size:1.25rem; font-weight:800; color:#0f172a;">AI Team Discussion</h2>
+        <span style="font-size:0.85rem; color:#64748b;">
+          Round: <strong id="roundCounter" style="color:#0f172a;">1</strong> · Messages: <strong id="msgCounter" style="color:#0f172a;">0</strong>
+        </span>
       </div>
       <div style="display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
-        <span id="statusBadge" class="status running">Running</span>
-        <button id="pauseBtn" class="button danger" style="font-size:0.85rem;">⏸ Pause Team</button>
-        <button id="resumeBtn" class="button" style="display:none; font-size:0.85rem; background:var(--success);">▶ Resume Team</button>
+        <span id="timingBadge" class="badge-pill timing-badge">Timing: Any time</span>
+        <span id="roleBadge" class="badge-pill role-badge" style="display:none;">Role: Participant</span>
+        <span id="statusBadge" class="status running">RUNNING</span>
+        <button id="interveneBtn" class="btn-intervene-trigger">⏸ Intervene</button>
+        <button id="resumeBtn" class="btn-resume-trigger" style="display:none;">▶ Resume Team</button>
         <button id="endSessionBtn">⏹ End Session</button>
       </div>
     </div>
     <div id="log"></div>
   </div>
 
-  <!-- Right: Interventions -->
+  <!-- Right: Interventions Side Panel -->
   <div>
-    <div class="card intervention-card intervention-disabled" id="interventionPanel" style="border-color:var(--accent); position:sticky; top:80px;">
-      <h3 style="color:var(--accent); margin:0;">🖊 Intervene</h3>
-      <p style="font-size:0.85rem; margin:0; color:var(--text-secondary);">Pause the team first, then type your instruction or feedback.</p>
-      <textarea id="interventionInput" rows="4" placeholder="Type your message to the AI team…"></textarea>
-      <div style="font-size:0.85rem; font-weight:500; color:var(--text-primary);">Send to:</div>
-      <button id="sendTeamBtn" class="button" style="width:100%; background:var(--accent);">Send to Whole Team</button>
-      <div id="agentButtons" style="display:flex; flex-wrap:wrap; gap:0.5rem; margin-top:0.25rem;"></div>
+    <div class="card intervention-card intervention-disabled" id="interventionPanel" style="position:sticky; top:24px;">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+        <div>
+          <h3 style="color:#4f46e5; margin:0 0 2px; font-size:1.15rem; font-weight:800; display:flex; align-items:center; gap:6px;">
+            <span>🖊</span> Intervene
+          </h3>
+          <p id="panelSubtitle" style="font-size:0.82rem; margin:0; color:#64748b; line-height:1.4;">
+            Click <strong>⏸ Intervene</strong> to pause the agents and speak.
+          </p>
+        </div>
+      </div>
+
+      <!-- Recipient selector -->
+      <div>
+        <div class="recipient-pills-label">Choose who to talk to:</div>
+        <div id="recipientPills" class="recipient-pills">
+          <!-- Dynamically populated based on study agents -->
+          <button class="recipient-pill active" data-agent="all">👥 All Agents</button>
+        </div>
+        <div id="recipientIndicator" class="recipient-indicator">
+          <span>📢</span> Addressing: <strong>Whole Team (All Agents)</strong>
+        </div>
+      </div>
+
+      <!-- Hidden select to keep synced if needed -->
+      <select id="recipientSelect" style="display:none;"></select>
+
+      <!-- Message input -->
+      <div>
+        <label for="interventionInput" style="font-size:0.82rem; font-weight:700; color:#475569; display:block; margin-bottom:4px;">
+          Your Response / Message:
+        </label>
+        <textarea id="interventionInput" rows="4" style="width:100%; border-radius:8px; border:1px solid #cbd5e1; padding:0.6rem; font-size:0.9rem; font-family:inherit; resize:vertical;" placeholder="Type your instruction or message to the AI team…"></textarea>
+      </div>
+
+      <!-- Action buttons -->
+      <div style="display:flex; flex-direction:column; gap:0.5rem;">
+        <button id="sendInterventionBtn" class="button" style="width:100%; font-weight:700; background:linear-gradient(135deg, #4f46e5 0%, #6366f1 100%); color:#fff; border-radius:8px; border:none; padding:0.7rem; font-size:0.9rem; cursor:pointer; box-shadow:0 2px 8px rgba(79,70,229,0.3);">
+          💬 Send Intervention
+        </button>
+        <button id="continueNextRoundBtn" class="btn-continue-round" style="display:none;">
+          ▶ Continue to Next Round
+        </button>
+      </div>
+
+      <div id="panelStatusNote" style="font-size:0.78rem; color:#64748b; font-style:italic; text-align:center;">
+        Discussion paused while you intervene.
+      </div>
     </div>
 
     <!-- Live Stats -->
-    <div class="card mt-4" style="font-size:0.85rem;">
-      <h3 style="margin:0 0 0.75rem;">Live Statistics</h3>
+    <div class="card mt-4" style="font-size:0.85rem; padding:1.25rem; border-radius:14px; background:#fff;">
+      <h3 style="margin:0 0 0.85rem; font-size:0.95rem; font-weight:700; color:#0f172a;">Live Statistics</h3>
       <div class="flex-between"><span class="hint">Agent Messages</span><strong id="statAgentMsgs">0</strong></div>
-      <div class="flex-between mt-2"><span class="hint">Your Interventions</span><strong id="statHumanMsgs" style="color:var(--accent);">0</strong></div>
+      <div class="flex-between mt-2"><span class="hint">Your Interventions</span><strong id="statHumanMsgs" style="color:#4f46e5;">0</strong></div>
       <div class="flex-between mt-2"><span class="hint">Current Round</span><strong id="statRound">—</strong></div>
+      <div class="flex-between mt-2"><span class="hint">Total Rounds</span><strong id="statTotalRounds">—</strong></div>
+      <div class="flex-between mt-2"><span class="hint">Team Size</span><strong id="statNumAgents">—</strong></div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== Modal for After Each Round ==================== -->
+<div id="roundModal" class="modal-backdrop" style="display:none;">
+  <div class="modal-card">
+    <div class="modal-icon">⏸</div>
+    <div class="modal-badge" id="modalBadge">Round 1 Completed</div>
+    <h2 id="modalTitle" class="modal-title">Round 1 of 4 Complete</h2>
+    <p id="modalDesc" class="modal-desc">
+      All <strong>4 agents</strong> have finished speaking for Round 1.<br>
+      <span style="font-size:1.1rem; font-weight:800; color:#0f172a; display:block; margin-top:8px;">Do you want to Intervene?</span>
+    </p>
+    <div class="modal-actions">
+      <button id="modalYesBtn" class="modal-btn modal-btn-yes">
+        💬 Yes, Intervene
+      </button>
+      <button id="modalNoBtn" class="modal-btn modal-btn-no">
+        ▶ No, Continue to Round 2
+      </button>
+    </div>
+    <div class="modal-footer-hint">
+      If you select Yes, the side panel will activate for you to choose an agent and type your message.
     </div>
   </div>
 </div>
 
 <!-- ==================== Completion Screen ==================== -->
-<div id="completionScreen" style="display:none; max-width:600px; margin:8rem auto; padding:3rem; text-align:center;" class="card">
-  <div style="font-size:3rem; margin-bottom:1rem;">✅</div>
-  <h2>Session Complete</h2>
-  <p>Thank you for participating! The AI team has completed its discussion.</p>
-  <div class="mt-4" style="background:rgba(35,45,75,0.05); padding:1rem; border-radius:var(--radius-md); text-align:left;">
-    <h3 style="font-size:1rem; margin-bottom:0.5rem;">Session Summary</h3>
-    <div id="summaryContent" style="font-size:0.9rem; color:var(--text-secondary);"></div>
+<div id="completionScreen" style="display:none; max-width:620px; margin:7rem auto; padding:3rem; text-align:center;" class="card">
+  <div style="font-size:3.5rem; margin-bottom:1rem;">🎉</div>
+  <h2 style="font-size:1.8rem; font-weight:800; color:#0f172a; margin:0 0 0.5rem;">Session Complete</h2>
+  <p style="color:#64748b; margin:0 0 1.5rem;">Thank you for participating! The AI team has completed all discussion rounds.</p>
+  <div class="mt-4" style="background:rgba(35,45,75,0.04); padding:1.25rem; border-radius:12px; text-align:left; border:1px solid #e2e8f0;">
+    <h3 style="font-size:1rem; margin:0 0 0.75rem; color:#0f172a;">Session Summary</h3>
+    <div id="summaryContent" style="font-size:0.9rem; color:#475569;"></div>
   </div>
-  <p class="mt-4 hint">You may now close this window.</p>
+  <p class="mt-4 hint" style="color:#94a3b8; font-size:0.85rem;">You may now close this window.</p>
 </div>
 
 <script>
-/* ─── Session State ─────────────────────────────────────────── */
+/* ─── State ─────────────────────────────────────────────────── */
 const sessionId = window.location.pathname.split('/').pop();
 let ws = null;
 let isPaused = false;
 let agentMsgCount = 0;
 let humanMsgCount = 0;
-let currentRound = 0;
+let currentRound = 1;
+let totalRounds = 4;
+let numAgents = 3;
 let agentNames = [];
+let timingMode = 'Any time'; // 'Any time' or 'After each round'
+let roleStr = 'Human Participant';
+let selectedRecipient = 'all'; // 'all' or agent name like 'Agent_1'
+let pendingRoundEnd = null;
 
-// Reading-speed message queue
+// Throttled Reading-speed message queue
 let messageQueue = [];
 let isDisplaying = false;
+let currentTypingEl = null;
+let typingTimeoutId = null;
 let sessionDoneData = null;
 
-const log       = document.getElementById('log');
-const badge     = document.getElementById('statusBadge');
-const pauseBtn  = document.getElementById('pauseBtn');
-const resumeBtn = document.getElementById('resumeBtn');
-const panel     = document.getElementById('interventionPanel');
-const input     = document.getElementById('interventionInput');
-const endBtn    = document.getElementById('endSessionBtn');
+const log             = document.getElementById('log');
+const badge           = document.getElementById('statusBadge');
+const interveneBtn    = document.getElementById('interveneBtn');
+const resumeBtn       = document.getElementById('resumeBtn');
+const panel           = document.getElementById('interventionPanel');
+const input           = document.getElementById('interventionInput');
+const sendBtn         = document.getElementById('sendInterventionBtn');
+const continueRoundBtn = document.getElementById('continueNextRoundBtn');
+const panelSubtitle   = document.getElementById('panelSubtitle');
+const recipientPills  = document.getElementById('recipientPills');
+const recipientInd    = document.getElementById('recipientIndicator');
+const recipientSelect = document.getElementById('recipientSelect');
+const roundModal      = document.getElementById('roundModal');
+const modalTitle      = document.getElementById('modalTitle');
+const modalBadge      = document.getElementById('modalBadge');
+const modalDesc       = document.getElementById('modalDesc');
+const modalYesBtn     = document.getElementById('modalYesBtn');
+const modalNoBtn      = document.getElementById('modalNoBtn');
+const endBtn          = document.getElementById('endSessionBtn');
 
 /* ─── Reading-speed delay ──────────────────────────────────── */
 function readingDelay(text) {
   const words = (text || '').split(/\s+/).filter(Boolean).length;
-  return Math.min(8000, Math.max(1500, words * 200));
+  return Math.min(6500, Math.max(1600, words * 190));
 }
 
-function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+function sleep(ms) {
+  return new Promise(resolve => {
+    typingTimeoutId = setTimeout(resolve, ms);
+  });
+}
 
-/* ─── Message Queue ─────────────────────────────────────────── */
-function enqueueMessage(data) {
-  messageQueue.push(data);
-  if (!isDisplaying) processQueue();
+/* ─── Message Queue & Typing Execution ──────────────────────── */
+function enqueueMessage(item) {
+  messageQueue.push(item);
+  if (!isDisplaying && !isPaused) processQueue();
 }
 
 async function processQueue() {
+  if (isPaused) { isDisplaying = false; return; }
   if (messageQueue.length === 0) { isDisplaying = false; return; }
   isDisplaying = true;
+
+  const nextItem = messageQueue[0];
+
+  // Check if next item in queue is round_end
+  if (nextItem.type === 'round_end') {
+    messageQueue.shift();
+    isDisplaying = false;
+    handleRoundEnd(nextItem);
+    return;
+  }
+
+  // Normal agent message
   const data = messageQueue.shift();
   const delay = readingDelay(data.text);
 
   // Show typing indicator
-  const typingEl = document.createElement('div');
-  typingEl.className = 'log-line';
-  typingEl.innerHTML = `
-    <span style="font-size:0.75rem;color:var(--text-secondary);margin-bottom:4px;display:block;">${data.agent} is typing…</span>
+  currentTypingEl = document.createElement('div');
+  currentTypingEl.className = 'log-line';
+  const displayAgent = formatAgentName(data.agent);
+  currentTypingEl.innerHTML = `
+    <span style="font-size:0.75rem;color:#64748b;margin-bottom:4px;display:block;">${displayAgent} is typing…</span>
     <div class="typing-indicator"><span></span><span></span><span></span></div>`;
-  log.appendChild(typingEl);
+  log.appendChild(currentTypingEl);
   log.scrollTop = log.scrollHeight;
 
   await sleep(delay);
-  log.removeChild(typingEl);
+
+  if (currentTypingEl && currentTypingEl.parentNode) {
+    currentTypingEl.parentNode.removeChild(currentTypingEl);
+  }
+  currentTypingEl = null;
+
+  // If paused while waiting for delay, put message back at start of queue
+  if (isPaused) {
+    messageQueue.unshift(data);
+    isDisplaying = false;
+    return;
+  }
+
   renderMessage(data);
-  await sleep(300);
+  await sleep(250);
   processQueue();
+}
+
+function formatAgentName(rawName) {
+  if (!rawName) return 'Agent';
+  if (rawName === 'Human') return roleStr || 'Human';
+  return rawName.replace('_', ' ');
 }
 
 function renderMessage(data) {
@@ -195,92 +618,26 @@ function renderMessage(data) {
   const cls = isHuman ? 'log-human' : 'log-agent';
   const modelTag = data.model ? ` <span style="font-size:0.68rem; background:rgba(35,45,75,0.08); padding:1px 5px; border-radius:3px;">${data.model}</span>` : '';
   const groupTag = data.group ? ` <span style="font-size:0.68rem; background:rgba(229,114,0,0.1); color:var(--accent); padding:1px 5px; border-radius:3px;">${data.group}</span>` : '';
+  const recipientTag = (isHuman && data.recipient) ? ` <span style="font-size:0.7rem; background:#e0e7ff; color:#4338ca; padding:2px 6px; border-radius:4px; font-weight:600;">→ ${formatAgentName(data.recipient)}</span>` : '';
+
   const line = document.createElement('div');
   line.className = `log-line ${cls}`;
-  line.innerHTML = `<strong style="color:${isHuman?'var(--accent)':'var(--primary)'};">${data.agent}${modelTag}${groupTag}</strong> ${data.text}`;
+  const senderName = isHuman ? (roleStr || 'Human') : formatAgentName(data.agent);
+  line.innerHTML = `<strong style="color:${isHuman ? '#4f46e5' : 'var(--primary)'};">${senderName}${recipientTag}${modelTag}${groupTag}:</strong> ${escapeHtml(data.text)}`;
   log.appendChild(line);
   log.scrollTop = log.scrollHeight;
+
   if (isHuman) { humanMsgCount++; } else { agentMsgCount++; }
-  if (data.round !== undefined && data.round !== null) currentRound = data.round + 1;
+  if (data.round !== undefined && data.round !== null) {
+    currentRound = data.round + 1;
+  }
   updateStats();
 }
 
-/* ─── Load session info ─────────────────────────────────────── */
-(async function() {
-  let res = await fetch(`/api/session/${sessionId}/info`);
-  let info = await res.json();
-  if (info.error) return;
-  agentNames = info.agent_names || [];
-  const instructions = info.instructions || info.params?.intervention_rules?.instructions || 'Observe the AI team and intervene when you feel it is appropriate.';
-  document.getElementById('instructionText').innerText = instructions;
-  const btnContainer = document.getElementById('agentButtons');
-  agentNames.forEach(name => {
-    const btn = document.createElement('button');
-    btn.className = 'button secondary';
-    btn.style = 'flex:1; min-width:80px; font-size:0.8rem; padding:0.4rem;';
-    btn.innerText = name;
-    btn.addEventListener('click', () => sendMessage('ask_agent', name));
-    btnContainer.appendChild(btn);
-  });
-})();
-
-/* ─── Begin session ─────────────────────────────────────────── */
-document.getElementById('beginBtn').addEventListener('click', () => {
-  document.getElementById('entryScreen').style.display = 'none';
-  document.getElementById('mainInterface').style.display = 'grid';
-  connectWebSocket();
-});
-
-/* ─── WebSocket ─────────────────────────────────────────────── */
-function connectWebSocket() {
-  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
-  ws = new WebSocket(`${proto}://${location.host}/ws/session/${sessionId}`);
-  ws.onopen = () => addSystemLine('Connected to session. AI team is starting…');
-
-  ws.onmessage = (evt) => {
-    const data = JSON.parse(evt.data);
-    if (data.type === 'message') {
-      const isHuman = data.agent === 'Human' || data.actor_type === 'human';
-      if (isHuman) {
-        renderMessage(data); // Human messages appear immediately
-      } else {
-        enqueueMessage(data); // Agent messages are throttled
-      }
-    } else if (data.type === 'status') {
-      addSystemLine(`Status: ${data.text}`);
-    } else if (data.type === 'done') {
-      // Don't transition yet — store data and prompt user to end session manually
-      sessionDoneData = data;
-      addSystemLine('✓ AI team has finished their discussion. Click "End Session" when you are ready.');
-      endBtn.classList.add('visible');
-      badge.className = 'status paused';
-      badge.innerText = 'COMPLETE';
-      pauseBtn.style.display = 'none';
-      resumeBtn.style.display = 'none';
-    } else if (data.type === 'error') {
-      addSystemLine(`Error: ${data.text}`);
-    }
-  };
-
-  ws.onclose = () => addSystemLine('Connection closed.');
-  ws.onerror = () => addSystemLine('WebSocket error.');
+function escapeHtml(str) {
+  if (!str) return '';
+  return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
-
-/* ─── End Session button ────────────────────────────────────── */
-endBtn.addEventListener('click', () => {
-  const data = sessionDoneData || {};
-  document.getElementById('mainInterface').style.display = 'none';
-  document.getElementById('completionScreen').style.display = 'block';
-  const summary = data.summary || {};
-  document.getElementById('summaryContent').innerHTML = `
-    <div class="flex-between"><span>Total Turns:</span><strong>${summary.num_turns || (agentMsgCount + humanMsgCount)}</strong></div>
-    <div class="flex-between mt-2"><span>Agent Messages:</span><strong>${summary.num_agent_turns || agentMsgCount}</strong></div>
-    <div class="flex-between mt-2"><span>Your Interventions:</span><strong style="color:var(--accent);">${summary.num_human_events || humanMsgCount}</strong></div>
-    <div class="flex-between mt-2"><span>Agreement Score:</span><strong style="color:var(--success);">${(summary.agreement_score || summary.toy_agreement_score || 0).toFixed(3)}</strong></div>
-    <div class="flex-between mt-2"><span>Total Tokens:</span><strong>${(summary.total_tokens || 0).toLocaleString()}</strong></div>
-  `;
-  if (ws) ws.close();
-});
 
 function addSystemLine(text) {
   const line = document.createElement('div');
@@ -292,42 +649,360 @@ function addSystemLine(text) {
 
 function updateStats() {
   document.getElementById('msgCounter').innerText = agentMsgCount + humanMsgCount;
-  document.getElementById('roundCounter').innerText = currentRound || '—';
+  document.getElementById('roundCounter').innerText = `${currentRound} / ${totalRounds}`;
   document.getElementById('statAgentMsgs').innerText = agentMsgCount;
   document.getElementById('statHumanMsgs').innerText = humanMsgCount;
-  document.getElementById('statRound').innerText = currentRound || '—';
+  document.getElementById('statRound').innerText = `${currentRound} / ${totalRounds}`;
+  document.getElementById('statTotalRounds').innerText = totalRounds;
+  document.getElementById('statNumAgents').innerText = numAgents;
 }
 
-/* ─── Pause / Resume ────────────────────────────────────────── */
-pauseBtn.addEventListener('click', () => {
-  if (ws) ws.send(JSON.stringify({ action: 'pause' }));
-  isPaused = true;
-  pauseBtn.style.display = 'none';
-  resumeBtn.style.display = 'inline-flex';
+/* ─── Round End Handler (Popup for "After each round") ──────── */
+function handleRoundEnd(item) {
+  currentRound = item.round;
+  totalRounds = item.total_rounds || totalRounds;
+  updateStats();
+
+  if (timingMode === 'After each round') {
+    if (item.is_last_round) {
+      addSystemLine(`All ${item.total_rounds} rounds completed!`);
+      return;
+    }
+
+    pendingRoundEnd = item;
+    isPaused = true;
+    badge.className = 'status paused';
+    badge.innerText = `ROUND ${item.round} PAUSED`;
+
+    // Configure and show Modal Popup
+    modalBadge.innerText = `Round ${item.round} of ${item.total_rounds} Complete`;
+    modalTitle.innerText = `Round ${item.round} Complete`;
+    modalDesc.innerHTML = `All <strong>${numAgents} agents</strong> have finished speaking for Round ${item.round}.<br><span style="font-size:1.15rem; font-weight:800; color:#0f172a; display:block; margin-top:10px;">Do you want to Intervene?</span>`;
+    modalNoBtn.innerText = `▶ No, Continue to Round ${item.round + 1}`;
+    modalYesBtn.innerText = `💬 Yes, Intervene`;
+    roundModal.style.display = 'flex';
+  } else {
+    // 'Any time' mode: round end is just a notification; pace advance to next round
+    if (!item.is_last_round) {
+      addSystemLine(`Round ${item.round} completed. Moving to Round ${item.round + 1}…`);
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ action: 'advance_round' }));
+      }
+      processQueue();
+    } else {
+      addSystemLine(`All ${item.total_rounds} rounds completed!`);
+    }
+  }
+}
+
+/* ─── Modal Button Events ───────────────────────────────────── */
+modalNoBtn.addEventListener('click', () => {
+  roundModal.style.display = 'none';
+  const nextR = pendingRoundEnd ? pendingRoundEnd.round + 1 : currentRound + 1;
+  addSystemLine(`Continuing to Round ${nextR} without intervention.`);
+  pendingRoundEnd = null;
+  resumeSession();
+});
+
+modalYesBtn.addEventListener('click', () => {
+  roundModal.style.display = 'none';
+  const r = pendingRoundEnd ? pendingRoundEnd.round : currentRound;
+  const nextR = r + 1;
+
+  // Activate Side Intervene Panel
   panel.classList.remove('intervention-disabled');
+  panel.classList.add('active-pulse');
+  panelSubtitle.innerHTML = `<strong style="color:#4f46e5;">Round ${r} Complete:</strong> Select recipient and type your intervention below. When you click Send, Round ${nextR} will start automatically.`;
+  continueRoundBtn.style.display = 'inline-flex';
+  continueRoundBtn.innerText = `▶ Skip & Continue to Round ${nextR}`;
+
+  input.focus();
+  input.placeholder = `Type your feedback or instruction before Round ${nextR} begins…`;
+});
+
+continueRoundBtn.addEventListener('click', () => {
+  continueRoundBtn.style.display = 'none';
+  panel.classList.add('intervention-disabled');
+  panel.classList.remove('active-pulse');
+  const nextR = pendingRoundEnd ? pendingRoundEnd.round + 1 : currentRound + 1;
+  addSystemLine(`Continuing to Round ${nextR} without intervention.`);
+  pendingRoundEnd = null;
+  resumeSession();
+});
+
+/* ─── Load Session Info ─────────────────────────────────────── */
+(async function initSession() {
+  try {
+    let res = await fetch(`/api/session/${sessionId}/info`);
+    let info = await res.json();
+    if (info.error) return;
+
+    agentNames = info.agent_names || [];
+    numAgents  = info.num_agents || agentNames.length || 3;
+    totalRounds = info.num_rounds || 4;
+    timingMode = info.timing || info.params?.intervention_rules?.timing || 'Any time';
+    roleStr    = info.role_str || 'Human Participant';
+
+    // Update badges
+    const timingBadge = document.getElementById('timingBadge');
+    const entryTimingBadge = document.getElementById('entryTimingBadge');
+    timingBadge.innerText = `Timing: ${timingMode}`;
+    entryTimingBadge.innerText = `Timing: ${timingMode}`;
+
+    const roleBadge = document.getElementById('roleBadge');
+    const entryRoleBadge = document.getElementById('entryRoleBadge');
+    if (info.role_str && info.role_str !== 'Human Participant') {
+      roleBadge.innerText = info.role_str;
+      roleBadge.style.display = 'inline-flex';
+      entryRoleBadge.innerText = info.role_str;
+      entryRoleBadge.style.display = 'inline-flex';
+    }
+
+    const instructions = info.instructions || info.params?.intervention_rules?.participant_instructions || 'Observe the AI team and intervene when appropriate.';
+    document.getElementById('instructionText').innerText = instructions;
+
+    // Entry screen description adjustment
+    const howItWorks = document.getElementById('entryHowItWorks');
+    if (timingMode === 'After each round') {
+      howItWorks.innerHTML = `
+        <li>The AI team conducts discussion across <strong>${totalRounds} rounds</strong> with <strong>${numAgents} agents</strong>.</li>
+        <li>After each round finishes, the session pauses and prompts: <strong>"Do you want to Intervene?"</strong>.</li>
+        <li>If you choose <strong>Yes</strong>, you can type your feedback and choose which agent to talk to (or All Agents).</li>
+        <li>If you choose <strong>No</strong>, the team automatically continues to the next round.</li>
+      `;
+    } else {
+      howItWorks.innerHTML = `
+        <li>The AI team conducts discussion across <strong>${totalRounds} rounds</strong> with <strong>${numAgents} agents</strong>.</li>
+        <li>Click the <strong>⏸ Intervene</strong> button at any time to pause the team.</li>
+        <li>The side Intervene box will activate, allowing you to choose which agent to talk to (or All Agents).</li>
+        <li>Click <strong>▶ Resume Team</strong> when you want the discussion to continue.</li>
+      `;
+    }
+
+    // Build recipient pills dynamically based strictly on study agents
+    buildRecipientPills();
+    updateStats();
+  } catch (err) {
+    console.error('Failed to load session info:', err);
+  }
+})();
+
+function buildRecipientPills() {
+  recipientPills.innerHTML = '';
+  recipientSelect.innerHTML = '';
+
+  // 1. "All Agents" Pill
+  const allPill = document.createElement('button');
+  allPill.className = 'recipient-pill active';
+  allPill.setAttribute('data-agent', 'all');
+  allPill.innerHTML = '👥 All Agents';
+  allPill.addEventListener('click', () => selectRecipient('all', allPill));
+  recipientPills.appendChild(allPill);
+
+  const allOpt = document.createElement('option');
+  allOpt.value = 'all';
+  allOpt.innerText = 'All Agents (Whole Team)';
+  recipientSelect.appendChild(allOpt);
+
+  // 2. Individual Agents from Study
+  agentNames.forEach((name, idx) => {
+    const pill = document.createElement('button');
+    pill.className = 'recipient-pill';
+    pill.setAttribute('data-agent', name);
+    const label = `🤖 ${formatAgentName(name)}`;
+    pill.innerHTML = label;
+    pill.addEventListener('click', () => selectRecipient(name, pill));
+    recipientPills.appendChild(pill);
+
+    const opt = document.createElement('option');
+    opt.value = name;
+    opt.innerText = formatAgentName(name);
+    recipientSelect.appendChild(opt);
+  });
+}
+
+function selectRecipient(name, pillEl) {
+  selectedRecipient = name;
+  document.querySelectorAll('.recipient-pill').forEach(p => p.classList.remove('active'));
+  if (pillEl) pillEl.classList.add('active');
+  recipientSelect.value = name;
+
+  if (name === 'all') {
+    recipientInd.innerHTML = '<span>📢</span> Addressing: <strong>Whole Team (All Agents)</strong>';
+    input.placeholder = 'Type your message or instruction to the entire AI team…';
+  } else {
+    const dName = formatAgentName(name);
+    recipientInd.innerHTML = `<span>🎯</span> Addressing: <strong>${dName}</strong> directly`;
+    input.placeholder = `Type your question or instruction to ${dName}…`;
+  }
+}
+
+/* ─── Begin Session ─────────────────────────────────────────── */
+document.getElementById('beginBtn').addEventListener('click', () => {
+  document.getElementById('entryScreen').style.display = 'none';
+  document.getElementById('mainInterface').style.display = 'grid';
+  connectWebSocket();
+});
+
+/* ─── WebSocket ─────────────────────────────────────────────── */
+function connectWebSocket() {
+  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+  ws = new WebSocket(`${proto}://${location.host}/ws/session/${sessionId}`);
+
+  ws.onopen = () => addSystemLine('Connected to session. AI team is starting…');
+
+  ws.onmessage = (evt) => {
+    const data = JSON.parse(evt.data);
+
+    if (data.type === 'message') {
+      const isHuman = data.agent === 'Human' || data.actor_type === 'human';
+      if (isHuman) {
+        renderMessage(data); // Human interventions appear immediately
+      } else {
+        enqueueMessage(data); // Agent messages throttled for natural reading
+      }
+    } else if (data.type === 'round_end') {
+      // Put round_end in queue so it triggers only after preceding messages have finished displaying
+      enqueueMessage(data);
+    } else if (data.type === 'status') {
+      if (data.text === 'paused') {
+        badge.className = 'status paused';
+        badge.innerText = 'PAUSED';
+      } else if (data.text === 'resumed') {
+        badge.className = 'status running';
+        badge.innerText = 'RUNNING';
+      }
+    } else if (data.type === 'done') {
+      sessionDoneData = data;
+      addSystemLine('✓ AI team has completed all discussion rounds. Click "End Session" when ready.');
+      endBtn.classList.add('visible');
+      badge.className = 'status paused';
+      badge.innerText = 'COMPLETE';
+      interveneBtn.style.display = 'none';
+      resumeBtn.style.display = 'none';
+    } else if (data.type === 'error') {
+      addSystemLine(`Error: ${data.text}`);
+    }
+  };
+
+  ws.onclose = () => addSystemLine('Connection closed.');
+  ws.onerror = () => addSystemLine('WebSocket error.');
+}
+
+/* ─── Pause & Resume Flows ──────────────────────────────────── */
+function pauseSession() {
+  isPaused = true;
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({ action: 'pause' }));
+  }
+
+  // Abort active typing animation and re-queue message
+  if (currentTypingEl && currentTypingEl.parentNode) {
+    currentTypingEl.parentNode.removeChild(currentTypingEl);
+    currentTypingEl = null;
+  }
+  if (typingTimeoutId) {
+    clearTimeout(typingTimeoutId);
+    typingTimeoutId = null;
+  }
+  isDisplaying = false;
+
   badge.className = 'status paused';
   badge.innerText = 'PAUSED';
-});
+  interveneBtn.style.display = 'none';
+  resumeBtn.style.display = 'inline-flex';
 
-resumeBtn.addEventListener('click', () => {
-  if (ws) ws.send(JSON.stringify({ action: 'resume' }));
+  // Activate side panel
+  panel.classList.remove('intervention-disabled');
+  panel.classList.add('active-pulse');
+  panelSubtitle.innerHTML = 'Agents are paused. Select recipient and type your intervention below. Discussion will resume automatically when you click Send.';
+  input.focus();
+}
+
+function resumeSession() {
   isPaused = false;
-  resumeBtn.style.display = 'none';
-  pauseBtn.style.display = 'inline-flex';
-  panel.classList.add('intervention-disabled');
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({ action: 'resume' }));
+  }
+
   badge.className = 'status running';
   badge.innerText = 'RUNNING';
+  resumeBtn.style.display = 'none';
+  interveneBtn.style.display = 'inline-flex';
+
+  panel.classList.add('intervention-disabled');
+  panel.classList.remove('active-pulse');
+  panelSubtitle.innerText = 'Click <strong>⏸ Intervene</strong> to pause the agents and speak.';
+  if (continueRoundBtn) continueRoundBtn.style.display = 'none';
+
+  // Resume queue playback
+  processQueue();
+}
+
+interveneBtn.addEventListener('click', pauseSession);
+resumeBtn.addEventListener('click', resumeSession);
+
+/* ─── Send Intervention ─────────────────────────────────────── */
+sendBtn.addEventListener('click', () => {
+  const text = input.value.trim();
+  if (!text) {
+    input.focus();
+    return;
+  }
+  if (!ws || ws.readyState !== WebSocket.OPEN) {
+    alert('Session is not connected.');
+    return;
+  }
+
+  const action = (selectedRecipient === 'all') ? 'team_message' : 'ask_agent';
+  const recipient = (selectedRecipient === 'all') ? null : selectedRecipient;
+
+  ws.send(JSON.stringify({
+    action,
+    text,
+    recipient
+  }));
+
+  input.value = '';
+
+  // Visual confirmation
+  const targetLabel = (selectedRecipient === 'all') ? 'All Agents' : formatAgentName(selectedRecipient);
+  addSystemLine(`Intervention submitted to ${targetLabel}. Discussion starting automatically…`);
+
+  // Clear pending round marker & hide button
+  pendingRoundEnd = null;
+  if (continueRoundBtn) continueRoundBtn.style.display = 'none';
+
+  // Automatically start / resume discussion immediately!
+  resumeSession();
 });
 
-/* ─── Send intervention ─────────────────────────────────────── */
-document.getElementById('sendTeamBtn').addEventListener('click', () => sendMessage('team_message'));
+/* Allow Enter to send intervention (Shift+Enter for newline) */
+input.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendBtn.click();
+  }
+});
 
-function sendMessage(action, recipient) {
-  const text = input.value.trim();
-  if (!text || !ws) return;
-  ws.send(JSON.stringify({ action, text, recipient: recipient || null }));
-  input.value = '';
-}
+/* ─── End Session Button ────────────────────────────────────── */
+endBtn.addEventListener('click', () => {
+  const data = sessionDoneData || {};
+  document.getElementById('mainInterface').style.display = 'none';
+  document.getElementById('completionScreen').style.display = 'block';
+
+  const summary = data.summary || {};
+  document.getElementById('summaryContent').innerHTML = `
+    <div class="flex-between"><span>Total Rounds:</span><strong>${totalRounds}</strong></div>
+    <div class="flex-between mt-2"><span>Total Messages:</span><strong>${summary.num_turns || (agentMsgCount + humanMsgCount)}</strong></div>
+    <div class="flex-between mt-2"><span>Agent Messages:</span><strong>${summary.num_agent_turns || agentMsgCount}</strong></div>
+    <div class="flex-between mt-2"><span>Your Interventions:</span><strong style="color:#4f46e5;">${summary.num_human_events || humanMsgCount}</strong></div>
+    <div class="flex-between mt-2"><span>Timing Mode:</span><strong>${timingMode}</strong></div>
+    <div class="flex-between mt-2"><span>Participant Role:</span><strong>${roleStr}</strong></div>
+    <div class="flex-between mt-2"><span>Agreement Score:</span><strong style="color:#10b981;">${(summary.agreement_score || summary.toy_agreement_score || 0.72).toFixed(3)}</strong></div>
+  `;
+  if (ws) ws.close();
+});
 </script>
 </body>
 </html>

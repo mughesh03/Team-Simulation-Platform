@@ -90,9 +90,21 @@
   .pb-card.selected .pb-check{display:flex;}
   .pb-kicker{font-size:10px;font-weight:700;color:var(--p-purple);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;}
   .pb-cite{font-size:10px;color:#667085;margin-top:9px;border-top:1px solid #eef1f4;padding-top:8px;}
-  .pb-diagram{height:84px;background:#f8fafc;border:1px dashed #d7dde8;border-radius:10px;margin:10px 0 11px;display:flex;align-items:center;justify-content:center;color:var(--p-navy);font-size:13px;font-weight:600;gap:6px;}
-  .pb-node{width:28px;height:28px;border-radius:9px;background:#fff;border:1px solid #cfd6e4;display:inline-flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(31,42,68,.06);font-size:12px;font-weight:600;}
-  .pb-arrow{padding:0 6px;color:#7a8699;font-size:16px;}
+  .pb-diagram{min-height:124px;height:124px;background:#f8fafc;border:1px dashed #d7dde8;border-radius:10px;margin:10px 0 11px;display:flex;align-items:center;justify-content:center;color:var(--p-purple);font-size:13px;font-weight:600;gap:6px;padding:6px 10px;box-sizing:border-box;}
+  .pb-diagram svg, .pb-diagram .iv-svg{width:100%;height:100%;max-height:118px;overflow:visible;display:block;}
+  .pb-structure-svg{width:100%;height:96px;overflow:visible;}
+  .pb-structure-svg .member{fill:#d92938;stroke:#b91c1c;stroke-width:1.5;}
+  .pb-structure-svg .output{fill:#1b6288;stroke:#155070;stroke-width:1.5;}
+  .pb-structure-svg .flow{fill:none;stroke:#1a1a1a;stroke-width:1.6;}
+  .pb-structure-svg text{font:700 11px system-ui,sans-serif;fill:#ffffff;text-anchor:middle;dominant-baseline:central;}
+  .pb-structure-svg .output-text{fill:#fff;font-weight:600;font-size:11px;}
+  .pb-live-btn{display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,#1e3a8a 0%,#2563eb 52%,#4f46e5 100%);color:#ffffff!important;border:1px solid rgba(255,255,255,0.28);border-radius:8px;padding:8px 15px;font-size:12.5px;font-weight:600;letter-spacing:0.02em;cursor:pointer;white-space:nowrap;text-decoration:none;box-shadow:0 4px 14px rgba(37,99,235,0.35),0 1px 3px rgba(0,0,0,0.1);transition:all .2s cubic-bezier(.16,1,.3,1);}
+  .pb-live-btn:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(37,99,235,0.48),0 2px 6px rgba(0,0,0,0.12);filter:brightness(1.08);color:#ffffff!important;}
+  .pb-live-btn:active{transform:translateY(0);box-shadow:0 2px 8px rgba(37,99,235,0.3);}
+  .pb-live-pulse{width:8px;height:8px;border-radius:50%;background:#22c55e;box-shadow:0 0 0 0 rgba(34,197,94,0.7);animation:pbLivePulse 1.8s infinite;flex-shrink:0;}
+  @keyframes pbLivePulse{0%{transform:scale(.95);box-shadow:0 0 0 0 rgba(34,197,94,.7);}70%{transform:scale(1);box-shadow:0 0 0 7px rgba(34,197,94,0);}100%{transform:scale(.95);box-shadow:0 0 0 0 rgba(34,197,94,0);}}
+  .pb-live-arrow{font-size:13px;font-weight:700;transition:transform .15s ease;}
+  .pb-live-btn:hover .pb-live-arrow{transform:translateX(3px);}
   .pb-meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;}
   .pb-chip{font-size:10px;color:#475467;background:#f2f4f7;border-radius:999px;padding:5px 8px;}
   .pb-subhead{font-size:13px;color:var(--p-navy);font-weight:700;margin:18px 0 9px;display:flex;align-items:center;gap:8px;}
@@ -173,6 +185,7 @@
 {% endblock %}
 
 {% block scripts %}
+<script src="/static/interdependence.js?v=4"></script>
 <script>
 /* ================================================================
    HITL Builder — state-driven UI matching v5 prototype
@@ -193,7 +206,7 @@ const st = {
   step: 0,
   phenomenon: 'Coordination under distributed expertise',
   researchQuestion: 'How does interdependence structure affect whether AI teams surface and use unique expertise?',
-  structure: 'Reciprocal',
+  structure: 'Reciprocal — Chain',
   task: 'Hidden-Profile Decision Task',
   customTaskName: '', customTaskPrompt: '', customTaskScoring: '', taskScored: 'Yes',
   agents: 4, rounds: 6,
@@ -206,7 +219,7 @@ const st = {
   ],
   reporterAgent: 'None',
   hitlTiming: 'Any time',
-  hitlPause: true, hitlResume: true,
+  roleManager: true, roleMember: false,
   hitlOne: true, hitlMultiple: true, hitlTeam: true,
   participantInstructions: 'Observe the AI team as it works. You may pause the conversation and send an additional message when intervention is allowed.',
   reps: 1, concurrency: 1, seed: '', conditionName: '', researcherNotes: '',
@@ -267,22 +280,39 @@ function renderResearch() {
 
 /* ── Step 2: Task Interdependence Structure ── */
 function structDiagram(name) {
-  // Pooled: 4 independent members each feeding into a shared output
-  if(name==='Pooled') return `<div class="pb-diagram" style="flex-direction:column;gap:4px;"><div style="display:flex;align-items:center;gap:6px;"><div style="display:flex;flex-direction:column;gap:4px;"><span class="pb-node">A</span><span class="pb-node">B</span><span class="pb-node">C</span><span class="pb-node">D</span></div><div style="display:flex;flex-direction:column;gap:2px;color:#7a8699;font-size:13px;">↘<span style="visibility:hidden;">↘</span>↗<span style="visibility:hidden;">↗</span></div><span class="pb-node" style="background:#e8e4ff;">Σ</span></div><span style="font-size:10px;color:#667085;">independent → aggregated output</span></div>`;
-  // Sequential: A → B → C → D pipeline handoff
-  if(name==='Sequential') return `<div class="pb-diagram"><span class="pb-node">A</span><span class="pb-arrow">→</span><span class="pb-node">B</span><span class="pb-arrow">→</span><span class="pb-node">C</span><span class="pb-arrow">→</span><span class="pb-node">D</span></div>`;
-  // Reciprocal: 2×2 grid with bidirectional arrows
-  if(name==='Reciprocal') return `<div class="pb-diagram" style="flex-direction:column;gap:4px;"><div style="display:flex;align-items:center;gap:4px;"><span class="pb-node">A</span><span class="pb-arrow">⇄</span><span class="pb-node">B</span></div><div style="color:#7a8699;font-size:11px;display:flex;gap:28px;margin-left:6px;">↕ ↕</div><div style="display:flex;align-items:center;gap:4px;"><span class="pb-node">D</span><span class="pb-arrow">⇄</span><span class="pb-node">C</span></div></div>`;
-  // Team (Intensive): all 4 members mutually adjusting on shared task
-  return `<div class="pb-diagram" style="flex-direction:column;gap:4px;"><span style="font-size:10px;color:#667085;">shared task</span><div style="display:flex;align-items:center;gap:4px;"><span class="pb-node">A</span><span class="pb-arrow">⇄</span><span class="pb-node">B</span><span class="pb-arrow">⇄</span><span class="pb-node">C</span><span class="pb-arrow">⇄</span><span class="pb-node">D</span></div><span style="font-size:10px;color:#667085;">continuous mutual adjustment</span></div>`;
+  if (typeof InterdependenceViz !== 'undefined') {
+    return `<div class="pb-diagram">${InterdependenceViz.getDiagramSVG(name, { interactive: false })}</div>`;
+  }
+  const defs=`<defs><marker id="pbArrowHitl" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="#1a1a1a"/></marker></defs>`;
+  const member=(x,y,n)=>`<circle fill="#d92938" cx="${x}" cy="${y}" r="15"/><text fill="#fff" font-weight="700" font-size="11" x="${x}" y="${y}">${n}</text>`;
+  const output=(x,y)=>`<rect fill="#1b6288" x="${x}" y="${y}" width="48" height="24" rx="6"/><text fill="#fff" font-weight="600" font-size="10" x="${x+24}" y="${y+12}">Output</text>`;
+  const arrow='url(#pbArrowHitl)';
+  let body='';
+  if(name==='Pooled'){
+    body=`${output(116,4)}<path class="flow" marker-end="${arrow}" d="M42 72 L124 29"/><path class="flow" marker-end="${arrow}" d="M96 68 L136 29"/><path class="flow" marker-end="${arrow}" d="M184 68 L151 29"/><path class="flow" marker-end="${arrow}" d="M238 72 L158 29"/>${member(34,82,1)}${member(92,82,2)}${member(188,82,3)}${member(246,82,4)}`;
+  }else if(name==='Sequential'){
+    body=`<path class="flow" marker-end="${arrow}" d="M50 52 L70 52"/><path class="flow" marker-end="${arrow}" d="M106 52 L126 52"/><path class="flow" marker-end="${arrow}" d="M162 52 L182 52"/><path class="flow" marker-end="${arrow}" d="M218 52 L229 52"/>${member(34,52,1)}${member(90,52,2)}${member(146,52,3)}${member(202,52,4)}${output(232,39)}`;
+  }else if(name==='Reciprocal — Chain'||name==='Reciprocal'){
+    body=`${output(116,3)}<path class="flow" marker-end="${arrow}" d="M140 75 L140 31"/><path class="flow" marker-end="${arrow}" d="M51 69 L72 69"/><path class="flow" marker-end="${arrow}" d="M69 78 L48 78"/><path class="flow" marker-end="${arrow}" d="M107 69 L128 69"/><path class="flow" marker-end="${arrow}" d="M125 78 L104 78"/><path class="flow" marker-end="${arrow}" d="M163 69 L184 69"/><path class="flow" marker-end="${arrow}" d="M181 78 L160 78"/>${member(34,74,1)}${member(90,74,2)}${member(146,74,3)}${member(202,74,4)}`;
+  }else{
+    body=`<path class="flow" marker-end="${arrow}" d="M54 27 L102 27"/><path class="flow" marker-end="${arrow}" d="M100 34 L52 34"/><path class="flow" marker-end="${arrow}" d="M38 45 L38 67"/><path class="flow" marker-end="${arrow}" d="M46 65 L46 43"/><path class="flow" marker-end="${arrow}" d="M119 45 L119 67"/><path class="flow" marker-end="${arrow}" d="M127 65 L127 43"/><path class="flow" marker-end="${arrow}" d="M53 41 L105 69"/><path class="flow" marker-end="${arrow}" d="M102 42 L51 68"/><path class="flow" marker-end="${arrow}" d="M54 81 L102 81"/><path class="flow" marker-end="${arrow}" d="M100 88 L52 88"/><path class="flow" marker-end="${arrow}" d="M137 56 L204 56"/>${member(38,28,1)}${member(119,28,2)}${member(38,80,3)}${member(119,80,4)}${output(207,43)}`;
+  }
+  return `<div class="pb-diagram"><svg class="pb-structure-svg" viewBox="0 0 280 104" role="img" aria-label="${name} interdependence diagram">${defs}${body}</svg></div>`;
 }
 
 function renderStructure() {
-  const structs=[['Pooled','Members work independently; contributions are aggregated into a shared output.','Independent contribution','Aggregation'],['Sequential','Work is passed through structured handoffs in a fixed pipeline order.','Workflow order','Handoffs'],['Reciprocal','Members iteratively exchange outputs and adapt to one another.','Bidirectional dependence','Iterative coordination'],['Team','Members coordinate jointly through continuous mutual adjustment on a shared task.','Intensive dependence','Joint adjustment']];
+  const structs=[['Pooled','Members work independently; contributions are aggregated into a shared output.','Independent contribution','Aggregation'],['Sequential','Work is passed through structured handoffs in a fixed pipeline order.','Workflow order','Handoffs'],['Reciprocal — Chain','Adjacent members exchange outputs in both directions along a chain.','Bidirectional chain','Iterative handoffs'],['Reciprocal — Comprehensive','Every member exchanges outputs with every other member.','Fully connected','Mutual adjustment']];
   return `
   <div class="pb-section-head">
     <div><h2>2. Task Interdependence Structure</h2><p>Select the interdependence structure that determines how work and information flow among agents.</p></div>
-    <span class="pb-badge">Interdependence</span>
+    <div style="display:flex; gap:10px; align-items:center;">
+      <button class="pb-live-btn" type="button" onclick="window.open('/interdependence?animate=1','_blank')">
+        <span class="pb-live-pulse"></span>
+        <span>Live Animation Flow</span>
+        <span class="pb-live-arrow">→</span>
+      </button>
+      <span class="pb-badge">Interdependence</span>
+    </div>
   </div>
   <div class="pb-field">
     <label>Interdependence Structure</label>
@@ -389,10 +419,10 @@ function renderHitl() {
       <option${sel(st.hitlTiming,'After each round')}>After each round</option>
     </select>
   </div>
-  <div class="pb-subhead">Participant Controls</div>
+  <div class="pb-subhead">Human Participant Role</div>
   <div class="pb-toggle-row">
-    <label class="pb-toggle-card"><input type="checkbox"${chk(st.hitlPause)} onchange="st.hitlPause=this.checked"><div><b>Pause / resume conversation</b><span>Participant can stop the AI team's conversation before sending a message.</span></div></label>
-    <label class="pb-toggle-card"><input type="checkbox"${chk(st.hitlResume)} onchange="st.hitlResume=this.checked"><div><b>Resume after intervention</b><span>The AI conversation continues after the participant message is delivered.</span></div></label>
+    <label class="pb-toggle-card"><input type="checkbox"${chk(st.roleManager)} onchange="st.roleManager=this.checked"><div><b>Human Manager</b><span>Participant acts as a team manager to oversee, direct, coordinate, or evaluate the AI team.</span></div></label>
+    <label class="pb-toggle-card"><input type="checkbox"${chk(st.roleMember)} onchange="st.roleMember=this.checked"><div><b>Human Member</b><span>Participant acts as a peer team member collaborating directly alongside AI agents.</span></div></label>
   </div>
   <div class="pb-subhead">Intervention Visibility / Recipients</div>
   <div class="pb-toggle-row">
@@ -498,7 +528,7 @@ function protocolObj(){
   if(st.task==='Custom Task'){obj.task.prompt=st.customTaskPrompt;if(st.taskScored==='Yes')obj.task.scoring=st.customTaskScoring;}
   obj.organizational_structure=st.structure;
   obj.team={agents:Number(st.agents),discussion_rounds:Number(st.rounds),composition:st.composition,reporter_agent:st.reporterAgent==='None'?null:parseInt(st.reporterAgent),instructions:st.composition==='Homogeneous agents'?[st.agentDetails[0]||'']:st.agentDetails.slice(0,st.agents)};
-  obj.human_in_the_loop={intervention_timing:st.hitlTiming,can_pause_resume:st.hitlPause,message_recipients:{one_agent:st.hitlOne,multiple_agents:st.hitlMultiple,entire_team:st.hitlTeam},resume_after_message:st.hitlResume,participant_instructions:st.participantInstructions};
+  obj.human_in_the_loop={intervention_timing:st.hitlTiming,roles:{manager:st.roleManager,member:st.roleMember},message_recipients:{one_agent:st.hitlOne,multiple_agents:st.hitlMultiple,entire_team:st.hitlTeam},participant_instructions:st.participantInstructions};
   obj.session={sessions:Number(st.reps),concurrency:Number(st.concurrency),seed:st.seed,experiment_label:st.conditionName,researcher_notes:st.researcherNotes};
   obj.llm={assignment:st.llmAssignment,temperature:Number(st.temperature),max_output_tokens:Number(st.maxTokens),base_url:st.baseURL||null,timeout_seconds:Number(st.timeout)};
   if(st.llmAssignment==='Same model for all agents'){obj.llm.provider=st.provider;obj.llm.model=st.model;obj.llm.mock_demo=st.model==='Mock Backend (Demo)';}
@@ -536,8 +566,8 @@ function renderProtocol(){
         <div style="font-size:10px;color:#667085;margin-top:2px;">${esc(st.composition)} · ${esc(st.structure)}</div>
       </div>
       <div style="background:#fff;border:1px solid #ede9fe;border-radius:10px;padding:12px 14px;">
-        <div style="font-size:10px;color:#667085;margin-bottom:4px;">Human Intervention</div>
-        <div style="font-size:12px;color:var(--p-navy);font-weight:600;">${esc(st.hitlTiming)}</div>
+        <div style="font-size:10px;color:#667085;margin-bottom:4px;">Human Role &amp; Intervention</div>
+        <div style="font-size:12px;color:var(--p-navy);font-weight:600;">${[st.roleManager?'Manager':'',st.roleMember?'Member':''].filter(Boolean).join(' + ')||'Participant'} · ${esc(st.hitlTiming)}</div>
         <div style="font-size:10px;color:#667085;margin-top:2px;">Recipients: ${recipients}</div>
       </div>
       <div style="background:#fff;border:1px solid #ede9fe;border-radius:10px;padding:12px 14px;">
@@ -620,14 +650,19 @@ async function pbLaunch() {
     team: {
       num_agents: st.agents, 
       num_rounds: st.rounds,
-      structure: st.structure.toLowerCase(),
+      structure: ({
+        'Pooled': 'pooled',
+        'Sequential': 'sequential',
+        'Reciprocal': 'reciprocal_chain',
+        'Reciprocal — Chain': 'reciprocal_chain',
+        'Reciprocal — Comprehensive': 'reciprocal_comprehensive'
+      })[st.structure] || 'sequential',
       reporter_agent: st.reporterAgent === 'None' ? null : parseInt(st.reporterAgent),
       agent_configs: (st.composition==='Homogeneous agents'?Array(st.agents).fill(st.agentDetails[0]||''):st.agentDetails.slice(0,st.agents)).map((desc, i) => ({ agent_id: i + 1, description: desc }))
     },
     intervention_rules: {
       timing: st.hitlTiming, 
-      can_pause: st.hitlPause, 
-      can_resume: st.hitlResume,
+      roles: {manager: st.roleManager, member: st.roleMember},
       recipients: {one: st.hitlOne, multiple: st.hitlMultiple, team: st.hitlTeam},
       participant_instructions: st.participantInstructions
     },

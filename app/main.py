@@ -75,7 +75,7 @@ class SessionParams(ExperimentParams):
 
 
 def _agent_order(agent_names: list[str], team_structure: str, round_idx: int) -> list[str]:
-    if team_structure in ["parallel", "team"]:
+    if team_structure in ["parallel", "team", "pooled", "reciprocal_comprehensive"]:
         return agent_names
     if team_structure == "hierarchical":
         if len(agent_names) <= 1:
@@ -89,35 +89,70 @@ def _agent_order(agent_names: list[str], team_structure: str, round_idx: int) ->
 
 async def _run_round(history: list[dict], agent_names: list[str], params: dict, round_idx: int) -> list[dict]:
     team_structure = params.get("team_structure", "sequential")
-    
-    if team_structure == "reciprocal":
-        mid = len(agent_names) // 2
-        if mid == 0:
-            mid = 1
-        group_a = agent_names[:mid]
-        group_b = agent_names[mid:]
-        
-        snapshot = list(history)
-        
-        async def run_group(group: list[str], group_name: str):
-            results = await asyncio.gather(*[
-                agent_turn(name, round_idx, snapshot, {**params, "agent_names": group})
-                for name in group
-            ])
-            for r in results:
-                r["group"] = group_name
-            return results
-            
-        a_results, b_results = await asyncio.gather(run_group(group_a, "Group A"), run_group(group_b, "Group B"))
-        return a_results + b_results
+
+    if team_structure == "pooled":
+        # Members contribute independently: each sees only its own prior work
+        # plus any human/system messages, never another agent's contribution.
+        async def run_independent(name: str):
+            private_history = [
+                item for item in history
+                if item.get("agent") == name or item.get("agent") not in agent_names
+            ]
+            return await agent_turn(
+                name, round_idx, private_history,
+                {**params, "agent_names": [name]},
+            )
+        return await asyncio.gather(*(run_independent(name) for name in agent_names))
+
+    if team_structure in ["reciprocal", "reciprocal_chain"]:
+        # Chain reciprocation: each member exchanges work with its immediate
+        # neighbor(s), in both directions, across rounds.
+        async def run_chain_member(index: int, name: str):
+            visible = {name}
+            if index > 0:
+                visible.add(agent_names[index - 1])
+            if index + 1 < len(agent_names):
+                visible.add(agent_names[index + 1])
+            local_history = [
+                item for item in history
+                if item.get("agent") in visible or item.get("agent") not in agent_names
+            ]
+            result = await agent_turn(
+                name, round_idx, local_history,
+                {**params, "agent_names": list(visible)},
+            )
+            result["reciprocal_form"] = "chain"
+            return result
+        return await asyncio.gather(*(
+            run_chain_member(index, name)
+            for index, name in enumerate(agent_names)
+        ))
 
     order = _agent_order(agent_names, team_structure, round_idx)
-    if team_structure in ["parallel", "team"]:
+    if team_structure in ["parallel", "team", "reciprocal_comprehensive"]:
         snapshot = list(history)
-        return await asyncio.gather(*[
+        results = await asyncio.gather(*[
             agent_turn(name, round_idx, snapshot, {**params, "agent_names": agent_names})
             for name in order
         ])
+        if team_structure == "reciprocal_comprehensive":
+            for result in results:
+                result["reciprocal_form"] = "comprehensive"
+        return results
+
+    if team_structure == "sequential":
+        # Every member receives the accumulated work from earlier handoffs.
+        results = []
+        running_history = list(history)
+        for name in agent_names:
+            result = await agent_turn(
+                name, round_idx, running_history,
+                {**params, "agent_names": agent_names},
+            )
+            results.append(result)
+            running_history.append(result)
+        return results
+
     results = []
     for name in order:
         result = await agent_turn(name, round_idx, history + results, {**params, "agent_names": agent_names})
@@ -287,15 +322,22 @@ class HumanLoopSession:
         self.num_agents = params.get("num_agents", 3)
         self.num_rounds = params.get("num_rounds", 10)
         self.agent_names = make_agent_names(self.num_agents)
+        self.timing = params.get("intervention_rules", {}).get("timing", "Any time")
         self.history: list[dict] = []
-        self.running_gate = asyncio.Event(); self.running_gate.set()
+        self.running_gate = asyncio.Event()
+        self.running_gate.set()
+        self.round_gate = asyncio.Event()
+        self.round_gate.set()
         self.interventions: asyncio.Queue = asyncio.Queue()
         self.websocket: Optional[WebSocket] = None
         self.run_task: Optional[asyncio.Task] = None
 
     async def send(self, payload: dict):
         if self.websocket:
-            await self.websocket.send_json(payload)
+            try:
+                await self.websocket.send_json(payload)
+            except Exception:
+                pass
 
     async def flush_interventions(self):
         while not self.interventions.empty():
@@ -308,17 +350,46 @@ class HumanLoopSession:
             await storage.log_session_event(self.session_id, "human", event_type, content, {"recipient": recipient} if recipient else {})
             await self.send({"type": "message", **human_entry})
 
-            if event_type == "HUMAN_QUERY" and recipient:
+            if event_type == "HUMAN_QUERY" and recipient and recipient not in {"all", "Entire Team", "Whole Team", "All Agents"}:
                 reply = await answer_human_question(recipient, content, self.history, {**self.params, "agent_names": self.agent_names})
                 self.history.append(reply)
                 await storage.log_session_event(self.session_id, recipient, "AGENT_REPLY_TO_HUMAN", reply["text"], {"recipient": "human"})
                 await self.send({"type": "message", **reply, "event_type": "AGENT_REPLY_TO_HUMAN"})
+
+    async def process_intervention(self, action: str, text: str, recipient: Optional[str] = None):
+        """Immediately process an intervention message from the participant."""
+        mapping = {"inject_info": "HUMAN_INFORMATION", "team_message": "HUMAN_TEAM_MESSAGE", "ask_agent": "HUMAN_QUERY"}
+        event_type = mapping.get(action, "HUMAN_TEAM_MESSAGE")
+        if not recipient or recipient in {"all", "Entire Team", "Whole Team", "All Agents"}:
+            event_type = "HUMAN_TEAM_MESSAGE"
+            recipient = None
+        else:
+            event_type = "HUMAN_QUERY"
+
+        human_entry = {
+            "agent": "Human",
+            "actor_type": "human",
+            "turn": -1,
+            "text": text,
+            "event_type": event_type,
+            "recipient": recipient
+        }
+        self.history.append(human_entry)
+        await storage.log_session_event(self.session_id, "human", event_type, text, {"recipient": recipient} if recipient else {})
+        await self.send({"type": "message", **human_entry})
+
+        if event_type == "HUMAN_QUERY" and recipient:
+            reply = await answer_human_question(recipient, text, self.history, {**self.params, "agent_names": self.agent_names})
+            self.history.append(reply)
+            await storage.log_session_event(self.session_id, recipient, "AGENT_REPLY_TO_HUMAN", reply["text"], {"recipient": "human"})
+            await self.send({"type": "message", **reply, "event_type": "AGENT_REPLY_TO_HUMAN"})
 
     async def run(self):
         await storage.log_session_event(self.session_id, "system", "SESSION_STARTED", "Agent team started")
         try:
             for round_idx in range(self.num_rounds):
                 await self.running_gate.wait()
+                await self.round_gate.wait()
                 await self.flush_interventions()
                 await self.running_gate.wait()
                 live_params = dict(self.params)
@@ -327,8 +398,23 @@ class HumanLoopSession:
                 for result in results:
                     self.history.append(result)
                     await storage.log_session_event(self.session_id, result["agent"], "AGENT_MESSAGE", result["text"], {"round": round_idx})
-                    await self.send({"type": "message", **result, "event_type": "AGENT_MESSAGE"})
+                    await self.send({"type": "message", **result, "event_type": "AGENT_MESSAGE", "round": round_idx})
                 await self.flush_interventions()
+
+                is_last = (round_idx + 1 >= self.num_rounds)
+                await self.send({
+                    "type": "round_end",
+                    "round": round_idx + 1,
+                    "total_rounds": self.num_rounds,
+                    "is_last_round": is_last
+                })
+
+                if not is_last:
+                    self.round_gate.clear()
+                    if self.timing == "After each round":
+                        self.running_gate.clear()
+                        await storage.log_session_event(self.session_id, "system", "ROUND_PAUSE", f"Paused after round {round_idx + 1} for HITL intervention check")
+                        await self.send({"type": "status", "text": "paused_round_end", "round": round_idx + 1})
 
             summary = summarize_transcript(self.history, self.agent_names, self.params.get("random_seed"))
             await storage.log_session_event(self.session_id, "system", "SESSION_COMPLETED", "Session completed", summary)
@@ -409,16 +495,18 @@ async def session_ws(websocket: WebSocket, session_id: str):
                 await storage.log_session_event(session.session_id, "system", "SESSION_PAUSED", "Paused before next agent round/turn")
                 await session.send({"type": "status", "text": "paused"})
             elif action == "resume":
+                session.round_gate.set()
                 session.running_gate.set()
                 await storage.log_session_event(session.session_id, "human", "RESUME", "Human resumed the AI team")
                 await session.send({"type": "status", "text": "resumed"})
+            elif action == "advance_round":
+                session.round_gate.set()
             elif action in {"inject_info", "team_message", "ask_agent"}:
                 text = str(data.get("text", "")).strip()
                 if not text:
                     continue
-                mapping = {"inject_info": "HUMAN_INFORMATION", "team_message": "HUMAN_TEAM_MESSAGE", "ask_agent": "HUMAN_QUERY"}
-                await session.interventions.put({"event_type": mapping[action], "content": text, "recipient": data.get("recipient")})
-                await session.send({"type": "status", "text": "human input queued"})
+                recipient = data.get("recipient")
+                await session.process_intervention(action, text, recipient)
     except WebSocketDisconnect:
         session.websocket = None
 
@@ -557,11 +645,26 @@ async def session_info(session_id: str):
                 session = s; break
     if not session:
         return {"error": "session not found"}
+    intervention = session.params.get("intervention_rules", {})
+    timing = intervention.get("timing", "Any time")
+    roles = intervention.get("roles", {})
+    role_titles = []
+    if roles.get("manager"):
+        role_titles.append("Human Manager")
+    if roles.get("member"):
+        role_titles.append("Human Member")
+    role_str = " & ".join(role_titles) if role_titles else "Human Participant"
+
     return {
         "session_id": session.session_id,
         "agent_names": session.agent_names,
+        "num_agents": session.num_agents,
+        "num_rounds": session.num_rounds,
+        "timing": timing,
+        "roles": roles,
+        "role_str": role_str,
         "params": public_config(session.params),
-        "instructions": session.params.get("intervention_rules", {}).get("instructions", ""),
+        "instructions": intervention.get("participant_instructions") or intervention.get("instructions", "Observe the AI team and intervene when appropriate."),
     }
 
 
@@ -718,6 +821,11 @@ async def task_library_page(request: Request): return templates.TemplateResponse
 
 @app.get("/research-capabilities", response_class=HTMLResponse)
 async def research_capabilities_page(request: Request): return templates.TemplateResponse("research_capabilities.html", {"request": request})
+
+@app.get("/interdependence", response_class=HTMLResponse)
+@app.get("/team-models", response_class=HTMLResponse)
+async def interdependence_page(request: Request):
+    return templates.TemplateResponse("interdependence.html", {"request": request})
 
 # Legacy page routes (kept for backward compatibility)
 @app.get("/batch", response_class=HTMLResponse)
