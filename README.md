@@ -158,7 +158,7 @@ pip install -r requirements.txt
 python run.py
 ```
 
-Open **http://127.0.0.1:8000**
+Open **https://team-simulation-platform.onrender.com/**
 
 Optional researcher login: set `RESEARCHER_PASSWORD` in `.env` (default documented in `.env.example`).
 
