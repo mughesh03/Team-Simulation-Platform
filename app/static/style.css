@@ -4,11 +4,11 @@
   --bg-color: #f0f2f5;
   --card-bg: #FFFFFF;
   --card-border: rgba(35, 45, 75, 0.15);
-  --text-primary: #232D4B; /* UVA Blue */
-  --text-secondary: #576587; /* Lighter UVA Blue for secondary text */
-  --primary: #232D4B; /* UVA Blue */
+  --text-primary: #232D4B;
+  --text-secondary: #576587;
+  --primary: #232D4B;
   --primary-hover: #1b233a;
-  --accent: #E57200; /* UVA Orange */
+  --accent: #E57200;
   --accent-hover: #cc6500;
   --danger: #ef4444;
   --danger-hover: #dc2626;

@@ -716,10 +716,10 @@ function renderExperiment() {
 
 /* ── Step 6: LLM ── */
 function providerOpts(cur) {
-  return ['UVA RC GenAI','OpenAI','Anthropic','Google','Local / OpenAI-compatible','Mock'].map(x => `<option${sel(cur,x)}>${x}</option>`).join('');
+  return ['Institution gateway','OpenAI','Anthropic','Google','Local / OpenAI-compatible','Mock'].map(x => `<option${sel(cur,x)}>${x}</option>`).join('');
 }
 function modelOpts(cur) {
-  return ['Kimi K2.5 (UVA RC GenAI)','GPT-4o','GPT-4 Turbo','GPT-3.5 Turbo','Claude 3.5 Sonnet','Claude 3 Opus','Gemini 2.5 Pro','Llama 3.1 70B','Custom model','Mock Backend (Demo)'].map(x => `<option${sel(cur,x)}>${x}</option>`).join('');
+  return ['Kimi K2.5','GPT-4o','GPT-4 Turbo','GPT-3.5 Turbo','Claude 3.5 Sonnet','Claude 3 Opus','Gemini 2.5 Pro','Llama 3.1 70B','Custom model','Mock Backend (Demo)'].map(x => `<option${sel(cur,x)}>${x}</option>`).join('');
 }
 function apiField(value, model, idx) {
   const mock = model === 'Mock Backend (Demo)';

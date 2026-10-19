@@ -1,8 +1,8 @@
-"""Agent backend — mock responses plus live UVA Kimi K2.5 path.
+"""Agent backend — mock responses plus optional live LLM calls.
 
 ``agent_turn`` / ``answer_human_question`` keep a stable return shape.
 - model == "mock" -> mock lines (demo, always works)
-- model == "kimi-k2.5" -> live UVA RC GenAI Open-WebUI call, hard error if key/network fails.
+- other models -> live call when an API key and endpoint are configured
 """
 
 import asyncio
@@ -20,12 +20,18 @@ except ImportError:
     pass
 
 try:
-    from . import uva_secrets as _local_secrets
+    from . import llm_secrets as _local_secrets
 except ImportError:
     try:
-        import app.uva_secrets as _local_secrets  # type: ignore
+        import app.llm_secrets as _local_secrets  # type: ignore
     except ImportError:
         _local_secrets = None  # type: ignore
+
+_SECRET_PLACEHOLDERS = frozenset({
+    "",
+    "PASTE_YOUR_API_KEY_HERE",
+    "PASTE_YOUR_INSTITUTION_KEY_HERE",
+})
 
 # ── Realistic mock dialogue lines keyed by task ──────────────────
 
@@ -154,7 +160,7 @@ def _assigned_model(agent_name: str, params: dict) -> str:
 def _local_secret(key: str, default: str = "") -> str:
     if _local_secrets is not None and hasattr(_local_secrets, key):
         val = str(getattr(_local_secrets, key) or "").strip()
-        if val and val != "PASTE_YOUR_UVA_KEY_HERE":
+        if val and val not in _SECRET_PLACEHOLDERS:
             return val
     return default
 
@@ -162,10 +168,9 @@ def _local_secret(key: str, default: str = "") -> str:
 def _api_key(params: dict) -> str:
     raw = (
         str(params.get("api_key") or "").strip()
-        or _local_secret("UVARC_GENAI_API")
+        or _local_secret("INSTITUTION_GENAI_API")
         or _local_secret("KIMI_API_KEY")
-        or os.getenv("UVARC_GenAI_API", "").strip()
-        or os.getenv("UVA_RC_API_KEY", "").strip()
+        or os.getenv("INSTITUTION_GENAI_API", "").strip()
         or os.getenv("KIMI_API_KEY", "").strip()
         or os.getenv("MOONSHOT_API_KEY", "").strip()
     )
@@ -176,18 +181,14 @@ def _api_key(params: dict) -> str:
 
 
 def _kimi_endpoints(api_key: str) -> list[tuple[str, str]]:
-    """UVA RC GenAI Open WebUI chat completions URL.
-
-    Per https://learning.rc.virginia.edu/notes/uva-rc-genai/usage/api/ :
-    POST {base}/chat/completions with {"model": "Kimi K2.5", "messages": [...]}
-
-    Priority: explicit KIMI_BASE_URL env > app/uva_secrets.py > UVA default.
-    """
+    """OpenAI-compatible chat completions base URL for Kimi K2.5."""
     configured = os.getenv("KIMI_BASE_URL", "").strip().rstrip("/") or _local_secret("KIMI_BASE_URL")
     configured_model = os.getenv("KIMI_MODEL", "").strip() or _local_secret("KIMI_MODEL", "Kimi K2.5")
-    if configured:
-        return [(configured, configured_model or "Kimi K2.5")]
-    return [("https://open-webui.rc.virginia.edu/api", "Kimi K2.5")]
+    if not configured:
+        raise RuntimeError(
+            "Kimi K2.5 base URL not configured. Set KIMI_BASE_URL in app/llm_secrets.py or your environment."
+        )
+    return [(configured, configured_model or "Kimi K2.5")]
 
 
 async def _client() -> httpx.AsyncClient:
@@ -198,7 +199,7 @@ async def _client() -> httpx.AsyncClient:
 
 
 def _header_variants(api_key: str) -> list[tuple[str, dict]]:
-    """Open WebUI Bearer first; some UVA proxies also accept an API key header."""
+    """Bearer auth first; some gateways also accept an API key header."""
     return [
         ("Bearer", {
             "Authorization": f"Bearer {api_key}",
@@ -245,7 +246,7 @@ def _parse_sse(body: str) -> tuple[str, int, int]:
         output_tokens = int(usage.get("completion_tokens") or output_tokens or 0)
     text = "".join(text_parts).strip()
     if not text:
-        raise RuntimeError("UVA RC GenAI returned an empty streamed message.")
+        raise RuntimeError("Chat completions API returned an empty streamed message.")
     return text, input_tokens, output_tokens
 
 
@@ -260,16 +261,16 @@ def _parse_completion(response: httpx.Response) -> tuple[str, int, int]:
     except json.JSONDecodeError:
         if "data:" in body:
             return _parse_sse(body)
-        raise RuntimeError(f"Unexpected UVA RC GenAI response: {body[:300]}")
+        raise RuntimeError(f"Unexpected chat completions response: {body[:300]}")
     if isinstance(data, dict) and data.get("error"):
-        raise RuntimeError(f"UVA RC GenAI error: {data.get('error')}")
+        raise RuntimeError(f"Chat completions API error: {data.get('error')}")
     choice = (data.get("choices") or [{}])[0]
     message = choice.get("message") or {}
     text = (message.get("content") or choice.get("text") or "").strip()
     if not text:
         text = ((choice.get("delta") or {}).get("content") or "").strip()
     if not text:
-        raise RuntimeError("UVA RC GenAI returned an empty message.")
+        raise RuntimeError("Chat completions API returned an empty message.")
     usage = data.get("usage") or {}
     return text, int(usage.get("prompt_tokens") or 0), int(usage.get("completion_tokens") or 0)
 
@@ -345,11 +346,14 @@ async def _call_litellm(model: str, messages: list[dict], params: dict) -> tuple
         "api_key": api_key,
     }
 
-    # Special handling for Kimi on UVA RC
     if model in KIMI_MODELS:
         kwargs["model"] = "openai/" + model
         base_url = os.getenv("KIMI_BASE_URL", "").strip().rstrip("/") or _local_secret("KIMI_BASE_URL")
-        kwargs["api_base"] = base_url or "https://open-webui.rc.virginia.edu/api"
+        if not base_url:
+            raise RuntimeError(
+                "Kimi K2.5 base URL not configured. Set KIMI_BASE_URL in app/llm_secrets.py or your environment."
+            )
+        kwargs["api_base"] = base_url
         # Optional: Some setups need standard Bearer headers
         kwargs["extra_headers"] = {"Authorization": f"Bearer {api_key}"}
 

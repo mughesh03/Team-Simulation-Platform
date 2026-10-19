@@ -6,7 +6,7 @@ const $ = id => document.getElementById(id);
 
 // ─── Model Labels ──────────────────────────────────────────────────
 const MODEL_LABELS = {
-  'kimi-k2.5':         'Kimi K2.5 (UVA)',
+  'kimi-k2.5':         'Kimi K2.5',
   'gpt-4o':            'OpenAI GPT-4o',
   'gpt-4-turbo':       'OpenAI GPT-4 Turbo',
   'gpt-3.5-turbo':     'OpenAI GPT-3.5 Turbo',

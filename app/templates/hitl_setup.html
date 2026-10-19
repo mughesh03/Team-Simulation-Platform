@@ -218,8 +218,8 @@ const st = {
     'Generalist. Receives unique evidence D and focuses on the overall team objective.'
   ],
   reporterAgent: 'None',
-  hitlTiming: 'Any time',
-  roleManager: true, roleMember: false,
+  participantRole: 'Human Manager',
+  customRoleDescription: '',
   hitlOne: true, hitlMultiple: true, hitlTeam: true,
   participantInstructions: 'Observe the AI team as it works. You may pause the conversation and send an additional message when intervention is allowed.',
   reps: 1, concurrency: 1, seed: '', conditionName: '', researcherNotes: '',
@@ -407,23 +407,36 @@ function renderTeam() {
 
 /* ── Step 5: HITL Intervention Rules ── */
 function renderHitl() {
+  const roles = [
+    ['Human Manager', 'Participant acts as a team manager to oversee, direct, coordinate, or evaluate the AI team.'],
+    ['Human Member',  'Participant acts as a peer team member collaborating directly alongside AI agents.'],
+    ['Custom Role',   'Define a custom researcher-specified role for the participant.']
+  ];
   return `
   <div class="pb-section-head">
     <div><h2>5. Human Intervention Rules</h2><p>Configure when the participant can pause the AI conversation and where an additional participant message can be sent.</p></div>
     <span class="pb-badge">HITL settings</span>
   </div>
-  <div class="pb-field">
-    <label>When can the participant intervene?</label>
-    <select onchange="st.hitlTiming=this.value">
-      <option${sel(st.hitlTiming,'Any time')}>Any time</option>
-      <option${sel(st.hitlTiming,'After each round')}>After each round</option>
-    </select>
+  <div style="padding:11px 14px;background:#eef8f3;border:1px solid #c3e6d4;border-radius:10px;font-size:12px;color:#2f6b4d;margin-bottom:14px;line-height:1.5;">
+    ℹ️ <strong>Intervention timing:</strong> The participant will be able to intervene at the end of each round.
   </div>
   <div class="pb-subhead">Human Participant Role</div>
+  <p class="pb-hint">Select one role. Roles are mutually exclusive.</p>
   <div class="pb-toggle-row">
-    <label class="pb-toggle-card"><input type="checkbox"${chk(st.roleManager)} onchange="st.roleManager=this.checked"><div><b>Human Manager</b><span>Participant acts as a team manager to oversee, direct, coordinate, or evaluate the AI team.</span></div></label>
-    <label class="pb-toggle-card"><input type="checkbox"${chk(st.roleMember)} onchange="st.roleMember=this.checked"><div><b>Human Member</b><span>Participant acts as a peer team member collaborating directly alongside AI agents.</span></div></label>
+    ${roles.map(([role, desc]) => `
+    <label class="pb-toggle-card" style="${st.participantRole===role?'border-color:var(--p-purple);background:var(--p-purple2);':''}">
+      <input type="radio" name="participantRole" value="${role}"${st.participantRole===role?' checked':''}
+        onchange="st.participantRole=this.value;render()"
+        style="margin-top:1px;flex-shrink:0;width:15px;height:15px;accent-color:var(--p-purple);cursor:pointer;">
+      <div><b>${role}</b><span>${desc}</span></div>
+    </label>`).join('')}
   </div>
+  ${st.participantRole === 'Custom Role' ? `
+  <div class="pb-field" style="margin-top:10px;">
+    <label>Custom Role Description</label>
+    <input value="${esc(st.customRoleDescription)}" placeholder="Describe the participant's role for this study..." oninput="st.customRoleDescription=this.value">
+    <div class="pb-note">This description will be shown to the participant before the session begins and included in the study protocol.</div>
+  </div>` : ''}
   <div class="pb-subhead">Intervention Visibility / Recipients</div>
   <div class="pb-toggle-row">
     <label class="pb-toggle-card"><input type="checkbox"${chk(st.hitlOne)} onchange="st.hitlOne=this.checked"><div><b>One agent</b><span>Send the message to one selected agent.</span></div></label>
@@ -457,8 +470,8 @@ function renderExperiment() {
 }
 
 /* ── Step 7: LLM ── */
-function providerOpts(cur){return['UVA RC GenAI','OpenAI','Anthropic','Google','Local / OpenAI-compatible','Mock'].map(x=>`<option${sel(cur,x)}>${x}</option>`).join('')}
-function modelOpts(cur){return['Kimi K2.5 (UVA RC GenAI)','GPT-4o','GPT-4 Turbo','GPT-3.5 Turbo','Claude 3.5 Sonnet','Claude 3 Opus','Gemini 2.5 Pro','Llama 3.1 70B','Custom model','Mock Backend (Demo)'].map(x=>`<option${sel(cur,x)}>${x}</option>`).join('')}
+function providerOpts(cur){return['Institution gateway','OpenAI','Anthropic','Google','Local / OpenAI-compatible','Mock'].map(x=>`<option${sel(cur,x)}>${x}</option>`).join('')}
+function modelOpts(cur){return['Kimi K2.5','GPT-4o','GPT-4 Turbo','GPT-3.5 Turbo','Claude 3.5 Sonnet','Claude 3 Opus','Gemini 2.5 Pro','Llama 3.1 70B','Custom model','Mock Backend (Demo)'].map(x=>`<option${sel(cur,x)}>${x}</option>`).join('')}
 function apiField(value,model,idx){
   const mock=model==='Mock Backend (Demo)';
   const oi=idx===null?'st.apiKey=this.value':`st.perAgentLLM[${idx}].apiKey=this.value`;
@@ -528,7 +541,7 @@ function protocolObj(){
   if(st.task==='Custom Task'){obj.task.prompt=st.customTaskPrompt;if(st.taskScored==='Yes')obj.task.scoring=st.customTaskScoring;}
   obj.organizational_structure=st.structure;
   obj.team={agents:Number(st.agents),discussion_rounds:Number(st.rounds),composition:st.composition,reporter_agent:st.reporterAgent==='None'?null:parseInt(st.reporterAgent),instructions:st.composition==='Homogeneous agents'?[st.agentDetails[0]||'']:st.agentDetails.slice(0,st.agents)};
-  obj.human_in_the_loop={intervention_timing:st.hitlTiming,roles:{manager:st.roleManager,member:st.roleMember},message_recipients:{one_agent:st.hitlOne,multiple_agents:st.hitlMultiple,entire_team:st.hitlTeam},participant_instructions:st.participantInstructions};
+  obj.human_in_the_loop={intervention_timing:'After each round',role:st.participantRole,custom_role_description:st.participantRole==='Custom Role'?st.customRoleDescription:null,message_recipients:{one_agent:st.hitlOne,multiple_agents:st.hitlMultiple,entire_team:st.hitlTeam},participant_instructions:st.participantInstructions};
   obj.session={sessions:Number(st.reps),concurrency:Number(st.concurrency),seed:st.seed,experiment_label:st.conditionName,researcher_notes:st.researcherNotes};
   obj.llm={assignment:st.llmAssignment,temperature:Number(st.temperature),max_output_tokens:Number(st.maxTokens),base_url:st.baseURL||null,timeout_seconds:Number(st.timeout)};
   if(st.llmAssignment==='Same model for all agents'){obj.llm.provider=st.provider;obj.llm.model=st.model;obj.llm.mock_demo=st.model==='Mock Backend (Demo)';}
@@ -567,7 +580,8 @@ function renderProtocol(){
       </div>
       <div style="background:#fff;border:1px solid #ede9fe;border-radius:10px;padding:12px 14px;">
         <div style="font-size:10px;color:#667085;margin-bottom:4px;">Human Role &amp; Intervention</div>
-        <div style="font-size:12px;color:var(--p-navy);font-weight:600;">${[st.roleManager?'Manager':'',st.roleMember?'Member':''].filter(Boolean).join(' + ')||'Participant'} · ${esc(st.hitlTiming)}</div>
+        <div style="font-size:12px;color:var(--p-navy);font-weight:600;">${esc(st.participantRole)} · After each round</div>
+        ${st.participantRole==='Custom Role'&&st.customRoleDescription?`<div style="font-size:10px;color:#667085;margin-top:2px;">${esc(st.customRoleDescription)}</div>`:''}
         <div style="font-size:10px;color:#667085;margin-top:2px;">Recipients: ${recipients}</div>
       </div>
       <div style="background:#fff;border:1px solid #ede9fe;border-radius:10px;padding:12px 14px;">
@@ -661,8 +675,9 @@ async function pbLaunch() {
       agent_configs: (st.composition==='Homogeneous agents'?Array(st.agents).fill(st.agentDetails[0]||''):st.agentDetails.slice(0,st.agents)).map((desc, i) => ({ agent_id: i + 1, description: desc }))
     },
     intervention_rules: {
-      timing: st.hitlTiming, 
-      roles: {manager: st.roleManager, member: st.roleMember},
+      timing: 'After each round',
+      role: st.participantRole,
+      custom_role_description: st.participantRole === 'Custom Role' ? st.customRoleDescription : null,
       recipients: {one: st.hitlOne, multiple: st.hitlMultiple, team: st.hitlTeam},
       participant_instructions: st.participantInstructions
     },
