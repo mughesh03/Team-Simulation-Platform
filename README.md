@@ -26,6 +26,82 @@ FastAPI research platform for **organizational team studies** with AI-only teams
 | `/research-capabilities` | Platform capabilities summary |
 | `/interdependence` | Animated interdependence structure diagrams |
 
+## Architecture
+
+High-level flow from study design through simulation runtime to review. Diagram generated with [gitdiagram.com](https://gitdiagram.com); node labels map to this repository.
+
+```mermaid
+flowchart TD
+
+subgraph group_study_design["Study design"]
+  node_study_builders["Study builders<br/>[pure_ai.html, hitl_setup.html]"]
+  node_builder_logic["Builder UI logic<br/>[pure_ai.html, hitl_setup.html, app.js]"]
+  node_task_library["Task library<br/>[task_library.html]"]
+  node_participant_ui["Participant interface<br/>[participant.html]"]
+end
+
+subgraph group_simulation["Simulation runtime"]
+  node_batch_orchestrator["Batch orchestration<br/>[main.py]"]
+  node_team_rounds["Team structure rounds<br/>[main.py]"]
+  node_agent_backend["Agent backend<br/>[agents.py]"]
+  node_llm_service["Live model service<br/>[LiteLLM + gateway]"]
+  node_hitl_session["HITL session runtime<br/>[main.py]"]
+end
+
+subgraph group_review["Review and reference"]
+  node_researcher_dashboards["Researcher dashboards"]
+  node_experiment_history["Experiment history<br/>[experiments.html]"]
+  node_interdependence_viz["Interdependence diagrams<br/>[interdependence.js]"]
+  node_result_exports["Result exports<br/>[storage.py]"]
+end
+
+subgraph group_platform["Platform services"]
+  node_web_routes["Web and API routes<br/>[main.py]"]
+  node_researcher_auth["Researcher auth<br/>[auth.py]"]
+  node_persistence[("JSONL and config storage<br/>[storage.py]")]
+end
+
+node_researcher(("Researcher"))
+node_participant(("Participant"))
+
+node_researcher -->|"configures studies"| node_study_builders
+node_study_builders -.->|"uses"| node_builder_logic
+node_builder_logic -->|"submits studies"| node_web_routes
+node_researcher -->|"browses tasks"| node_task_library
+node_web_routes -->|"checks access"| node_researcher_auth
+node_web_routes -->|"starts batches"| node_batch_orchestrator
+node_batch_orchestrator -->|"runs simulations"| node_team_rounds
+node_team_rounds -->|"requests turns"| node_agent_backend
+node_agent_backend -.->|"calls live models"| node_llm_service
+node_batch_orchestrator -->|"logs results"| node_persistence
+node_web_routes -->|"creates sessions"| node_hitl_session
+node_hitl_session -->|"requests turns"| node_agent_backend
+node_hitl_session -->|"logs events"| node_persistence
+node_participant -->|"joins session"| node_participant_ui
+node_participant_ui -->|"intervenes"| node_hitl_session
+node_researcher -->|"reviews results"| node_researcher_dashboards
+node_researcher_dashboards -.->|"requests results"| node_web_routes
+node_web_routes -.->|"reads records"| node_persistence
+node_researcher -->|"views history"| node_experiment_history
+node_persistence -->|"provides records"| node_result_exports
+node_researcher -->|"downloads exports"| node_result_exports
+node_researcher -->|"views diagrams"| node_interdependence_viz
+
+classDef toneNeutral fill:#f8fafc,stroke:#334155,stroke-width:1.5px,color:#0f172a
+classDef toneBlue fill:#dbeafe,stroke:#2563eb,stroke-width:1.5px,color:#172554
+classDef toneAmber fill:#fef3c7,stroke:#d97706,stroke-width:1.5px,color:#78350f
+classDef toneMint fill:#dcfce7,stroke:#16a34a,stroke-width:1.5px,color:#14532d
+classDef toneRose fill:#ffe4e6,stroke:#e11d48,stroke-width:1.5px,color:#881337
+classDef toneIndigo fill:#e0e7ff,stroke:#4f46e5,stroke-width:1.5px,color:#312e81
+class node_study_builders,node_builder_logic,node_task_library,node_participant_ui toneBlue
+class node_batch_orchestrator,node_team_rounds,node_agent_backend,node_llm_service,node_hitl_session toneAmber
+class node_researcher_dashboards,node_experiment_history,node_interdependence_viz,node_result_exports toneMint
+class node_web_routes,node_researcher_auth,node_persistence toneRose
+class node_researcher,node_participant toneIndigo
+```
+
+**Source files (quick links):** [templates](https://github.com/mughesh03/Team-Simulation-Platform/tree/main/app/templates) · [main.py](https://github.com/mughesh03/Team-Simulation-Platform/blob/main/app/main.py) · [agents.py](https://github.com/mughesh03/Team-Simulation-Platform/blob/main/app/agents.py) · [storage.py](https://github.com/mughesh03/Team-Simulation-Platform/blob/main/app/storage.py) · [interdependence.js](https://github.com/mughesh03/Team-Simulation-Platform/blob/main/app/static/interdependence.js)
+
 ## Task interdependence (backend)
 
 Structures map to orchestration in `app/main.py`:
