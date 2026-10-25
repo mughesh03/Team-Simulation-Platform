@@ -47,32 +47,32 @@
     pooled: {
       id: 'pooled',
       name: 'Pooled',
-      title: 'Pooled Interdependence',
-      titleLines: ['Pooled', 'Interdependence'],
+      title: 'Pooled',
+      titleLines: ['Pooled'],
       description: 'All members work independently and contribute their individual outputs to a shared common pool without direct member-to-member handoffs.',
       coordination: 'Standardization & Aggregation'
     },
     sequential: {
       id: 'sequential',
       name: 'Sequential',
-      title: 'Sequential Interdependence',
-      titleLines: ['Sequential', 'Interdependence'],
+      title: 'Sequential',
+      titleLines: ['Sequential'],
       description: 'Work flows linearly in a fixed pipeline order (1 → 2 → 3 → 4 → Output). Each member depends directly on the output of the preceding member.',
       coordination: 'Plans, Schedules & Handoff Protocols'
     },
     reciprocal: {
       id: 'reciprocal',
-      name: 'Reciprocal',
-      title: 'Reciprocal Interdependence',
-      titleLines: ['Reciprocal', 'Interdependence'],
+      name: 'Reciprocal — Chain',
+      title: 'Reciprocal — Chain',
+      titleLines: ['Reciprocal — Chain'],
       description: 'Adjacent members exchange inputs and outputs bidirectionally in an iterative feedback loop, with final synthesis delivered to Output above the group.',
       coordination: 'Mutual Adjustment & Iterative Feedback'
     },
     comprehensive: {
       id: 'comprehensive',
-      name: 'Comprehensive',
-      title: 'Comprehensive Interdependence',
-      titleLines: ['Comprehensive', 'Interdependence'],
+      name: 'Team — Comprehensive',
+      title: 'Team — Comprehensive',
+      titleLines: ['Team — Comprehensive'],
       description: 'Arranged in a 2×2 grid where every pair of members is interconnected with bidirectional arrows for full swarm consensus, delivering final collective output to the right.',
       coordination: 'Continuous Mutual Adjustment & Group Consensus'
     }
@@ -564,8 +564,7 @@
         <div class="iv-card-content">
           <div class="iv-title-col">
             <h3 class="iv-model-title">
-              <span>${meta.titleLines[0]}</span>
-              <span>${meta.titleLines[1]}</span>
+              ${(meta.titleLines || []).map(line => `<span>${line}</span>`).join('')}
             </h3>
             ${options.showBadges ? `
               <div class="iv-meta-tag">${meta.coordination}</div>
@@ -592,7 +591,7 @@
    * Row 2: Sequential (Bottom-Left) | Comprehensive (Bottom-Right)
    */
   function render2x2GridHTML(options = {}) {
-    const order = ['pooled', 'reciprocal', 'sequential', 'comprehensive'];
+    const order = ['pooled', 'sequential', 'reciprocal', 'comprehensive'];
     const cards = order.map(k => renderCardHTML(k, options)).join('\n');
 
     return `

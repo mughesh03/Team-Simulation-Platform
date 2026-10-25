@@ -34,27 +34,12 @@
     flex-wrap: wrap;
     gap: 16px;
   }
-  .id-hero .tag {
-    font-size: 11px;
-    letter-spacing: .12em;
-    text-transform: uppercase;
-    font-weight: 700;
-    color: var(--id-blue);
-    margin-bottom: 6px;
-  }
   .id-hero h1 {
     font-size: 28px;
     font-weight: 700;
     color: var(--id-navy);
-    margin: 0 0 6px;
-    letter-spacing: -0.02em;
-  }
-  .id-hero p {
-    font-size: 14.5px;
-    color: var(--id-muted);
     margin: 0;
-    max-width: 760px;
-    line-height: 1.55;
+    letter-spacing: -0.02em;
   }
 
   /* Control Toolbar */
@@ -63,37 +48,54 @@
     align-items: center;
     gap: 10px;
     flex-wrap: wrap;
-    background: #ffffff;
-    padding: 8px 14px;
-    border-radius: 10px;
-    border: 1px solid var(--id-border);
-    box-shadow: 0 1px 3px rgba(0,0,0,0.03);
   }
 
-  .id-btn {
+  .id-anim-btn {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    background: #ffffff;
-    color: #334155;
-    border: 1px solid #cbd5e1;
-    border-radius: 6px;
-    padding: 6px 12px;
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.15s ease;
-  }
-  .id-btn:hover {
-    background: #f1f5f9;
-    color: #0f172a;
-    border-color: #94a3b8;
-  }
-  .id-btn.active {
-    background: #e0f2fe;
-    color: #0369a1;
-    border-color: #7dd3fc;
+    gap: 8px;
+    background: linear-gradient(135deg, #2563eb 0%, #4f46e5 50%, #7c3aed 100%);
+    color: #ffffff;
+    border: none;
+    border-radius: 999px;
+    padding: 10px 22px;
+    font-size: 14px;
     font-weight: 600;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    box-shadow: 0 4px 16px rgba(79, 70, 229, 0.35), 0 2px 4px rgba(0, 0, 0, 0.08);
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .id-anim-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(79, 70, 229, 0.48), 0 3px 8px rgba(0, 0, 0, 0.12);
+    filter: brightness(1.06);
+    color: #ffffff;
+  }
+  .id-anim-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(79, 70, 229, 0.3);
+  }
+  .id-anim-btn.active {
+    background: linear-gradient(135deg, #ea580c 0%, #dc2626 100%);
+    box-shadow: 0 4px 16px rgba(220, 38, 38, 0.35);
+  }
+  .id-anim-pulse {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #22c55e;
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
+    animation: idAnimPulse 1.8s infinite;
+  }
+  .id-anim-btn.active .id-anim-pulse {
+    background: #fbbf24;
+    box-shadow: 0 0 0 0 rgba(251, 191, 36, 0.7);
+  }
+  @keyframes idAnimPulse {
+    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
+    70% { transform: scale(1); box-shadow: 0 0 0 7px rgba(34, 197, 94, 0); }
+    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
   }
 
   /* White Canvas Wrapper for the 2x2 Grid */
@@ -196,30 +198,19 @@
 
   /* Model title on left */
   .id-title-box {
-    flex: 0 0 160px;
+    flex: 0 0 170px;
     display: flex;
     flex-direction: column;
     justify-content: center;
     user-select: none;
   }
   .id-cell-title {
-    font-size: 1.18rem;
+    font-size: 1.22rem;
     font-weight: 700;
-    line-height: 1.25;
+    line-height: 1.3;
     color: #1e293b;
     margin: 0;
     letter-spacing: -0.01em;
-  }
-  .id-cell-sub {
-    font-size: 0.72rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: #64748b;
-    margin-top: 6px;
-    display: flex;
-    align-items: center;
-    gap: 4px;
   }
 
   /* SVG Graphics Area on right */
@@ -237,87 +228,6 @@
     max-height: 200px;
     display: block;
     overflow: visible;
-  }
-
-  /* Theoretical Matrix */
-  .id-theory-card {
-    background: #ffffff;
-    border-radius: 14px;
-    border: 1px solid var(--id-border);
-    box-shadow: var(--id-shadow);
-    padding: 28px 32px;
-    margin-bottom: 24px;
-  }
-  .id-theory-card h3 {
-    font-size: 18px;
-    font-weight: 700;
-    color: var(--id-navy);
-    margin: 0 0 6px;
-  }
-  .id-theory-card p {
-    font-size: 14px;
-    color: var(--id-muted);
-    margin: 0 0 20px;
-    line-height: 1.5;
-  }
-
-  .id-matrix-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 13.5px;
-  }
-  .id-matrix-table th {
-    background: #f8fafc;
-    color: #334155;
-    font-weight: 600;
-    text-align: left;
-    padding: 12px 14px;
-    border-bottom: 2px solid var(--id-border);
-  }
-  .id-matrix-table td {
-    padding: 12px 14px;
-    border-bottom: 1px solid #f1f5f9;
-    color: #475569;
-    vertical-align: top;
-  }
-  .id-matrix-table tr:hover td {
-    background: #f8fafc;
-  }
-  .id-pill {
-    display: inline-block;
-    padding: 3px 8px;
-    border-radius: 4px;
-    font-size: 11px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
-  }
-  .id-pill-pooled { background: #fee2e2; color: #991b1b; }
-  .id-pill-seq { background: #fef3c7; color: #92400e; }
-  .id-pill-recip { background: #e0f2fe; color: #075985; }
-  .id-pill-comp { background: #ede9fe; color: #5b21b6; }
-
-  /* Notification Toast */
-  .id-toast {
-    position: fixed;
-    bottom: 24px;
-    right: 24px;
-    background: #1e293b;
-    color: #ffffff;
-    padding: 10px 18px;
-    border-radius: 8px;
-    font-size: 13px;
-    font-weight: 500;
-    box-shadow: 0 4px 14px rgba(0,0,0,0.18);
-    opacity: 0;
-    transform: translateY(12px);
-    transition: all 0.25s ease;
-    pointer-events: none;
-    z-index: 1000;
-  }
-  .id-toast.show {
-    opacity: 1;
-    transform: translateY(0);
   }
 
   /* Responsive Mobile Layout */
@@ -343,9 +253,6 @@
     .id-cell-title {
       font-size: 1.1rem;
     }
-    .id-cell-sub {
-      justify-content: center;
-    }
     .id-diagram-box svg {
       max-width: 100%;
       max-height: 160px;
@@ -365,18 +272,15 @@
   <!-- Header / Hero -->
   <div class="id-hero">
     <div>
-      <div class="tag">Organizational Design & Multi-Agent Architecture</div>
       <h1>Team Interdependence Models</h1>
-      <p>Visualization of the four fundamental team interdependence structures based on James D. Thompson's landmark organizational taxonomy (1967). In multi-agent LLM teams, these structures determine communication topology, context sharing, handoff order, and collective intelligence emergence.</p>
     </div>
 
     <!-- Controls -->
     <div class="id-controls">
-      <button class="id-btn" id="btnToggleAnim" onclick="toggleAnimation()">
-        <span id="animIcon">▶</span> <span id="animText">Animate Flow</span>
-      </button>
-      <button class="id-btn" id="btnToggleNum" onclick="toggleNumbering()">
-        <span>⇄</span> Grid Numbers: <strong id="numModeLabel">3,4 / 1,2 (Ref)</strong>
+      <button class="id-anim-btn" id="btnToggleAnim" onclick="toggleAnimation()">
+        <span class="id-anim-pulse"></span>
+        <span id="animIcon">▶</span>
+        <span id="animText">Animate Flow</span>
       </button>
     </div>
   </div>
@@ -400,103 +304,49 @@
       </div>
     </div>
 
-    <!-- The 2x2 Grid conforming to reference image -->
+    <!-- The 2x2 Grid conforming to reference image & Pure AI order: Pooled, Sequential, Reciprocal — Chain, Team — Comprehensive -->
     <div class="id-2x2-grid" id="interdependenceGrid">
       
-      <!-- Top-Left: Pooled Interdependence -->
+      <!-- 1. Pooled -->
       <div class="id-cell" id="card-pooled">
         <div class="id-title-box">
-          <h3 class="id-cell-title">Pooled<br>Interdependence</h3>
-          <div class="id-cell-sub">Independent Contribution</div>
+          <h3 class="id-cell-title">Pooled</h3>
         </div>
         <div class="id-diagram-box" id="diagram-pooled">
           <!-- Pooled SVG rendered dynamically -->
         </div>
       </div>
 
-      <!-- Top-Right: Reciprocal Interdependence -->
-      <div class="id-cell" id="card-reciprocal">
-        <div class="id-title-box">
-          <h3 class="id-cell-title">Reciprocal<br>Interdependence</h3>
-          <div class="id-cell-sub">Iterative Handoffs</div>
-        </div>
-        <div class="id-diagram-box" id="diagram-reciprocal">
-          <!-- Reciprocal SVG rendered dynamically -->
-        </div>
-      </div>
-
-      <!-- Bottom-Left: Sequential Interdependence -->
+      <!-- 2. Sequential -->
       <div class="id-cell" id="card-sequential">
         <div class="id-title-box">
-          <h3 class="id-cell-title">Sequential<br>Interdependence</h3>
-          <div class="id-cell-sub">Pipeline Handoffs</div>
+          <h3 class="id-cell-title">Sequential</h3>
         </div>
         <div class="id-diagram-box" id="diagram-sequential">
           <!-- Sequential SVG rendered dynamically -->
         </div>
       </div>
 
-      <!-- Bottom-Right: Comprehensive Interdependence -->
+      <!-- 3. Reciprocal — Chain -->
+      <div class="id-cell" id="card-reciprocal">
+        <div class="id-title-box">
+          <h3 class="id-cell-title">Reciprocal — Chain</h3>
+        </div>
+        <div class="id-diagram-box" id="diagram-reciprocal">
+          <!-- Reciprocal SVG rendered dynamically -->
+        </div>
+      </div>
+
+      <!-- 4. Team — Comprehensive -->
       <div class="id-cell" id="card-comprehensive">
         <div class="id-title-box">
-          <h3 class="id-cell-title">Comprehensive<br>Interdependence</h3>
-          <div class="id-cell-sub">Mutual Adjustment</div>
+          <h3 class="id-cell-title">Team — Comprehensive</h3>
         </div>
         <div class="id-diagram-box" id="diagram-comprehensive">
           <!-- Comprehensive SVG rendered dynamically -->
         </div>
       </div>
 
-    </div>
-  </div>
-
-  <!-- Theoretical & Architectural Matrix -->
-  <div class="id-theory-card">
-    <h3>Comparative Theoretical Matrix</h3>
-    <p>How each coordination model maps to organizational theory and multi-agent system execution in this platform:</p>
-
-    <div style="overflow-x: auto;">
-      <table class="id-matrix-table">
-        <thead>
-          <tr>
-            <th>Model</th>
-            <th>Coordination Mechanism</th>
-            <th>Communication Complexity</th>
-            <th>Information Visibility</th>
-            <th>Platform Implementation</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td><span class="id-pill id-pill-pooled">Pooled</span></td>
-            <td>Standardization & Aggregation</td>
-            <td><strong>O(1)</strong> per agent, <strong>O(N)</strong> total</td>
-            <td>Agents work in strict isolation; contributions aggregated only in final round</td>
-            <td>Parallel async agent queries with private history; outputs combined by aggregator/referee.</td>
-          </tr>
-          <tr>
-            <td><span class="id-pill id-pill-seq">Sequential</span></td>
-            <td>Planning, Scheduling & Handoffs</td>
-            <td><strong>O(N)</strong> linear stages</td>
-            <td>Agent <em>i</em> receives accumulated context from Agent <em>i - 1</em></td>
-            <td>Pipeline execution (Agent 1 → 2 → 3 → 4); ideal for multi-stage refinement or drafting/review.</td>
-          </tr>
-          <tr>
-            <td><span class="id-pill id-pill-recip">Reciprocal</span></td>
-            <td>Iterative Feedback & Mutual Adjustment</td>
-            <td><strong>O(N)</strong> localized dual-directed</td>
-            <td>Adjacent agents exchange pairwise feedback before group synthesis</td>
-            <td>Round-robin exchanges between paired specialists (e.g., coder ⇄ reviewer) before final synthesis.</td>
-          </tr>
-          <tr>
-            <td><span class="id-pill id-pill-comp">Comprehensive</span></td>
-            <td>Full Mutual Adjustment & Group Deliberation</td>
-            <td><strong>O(N²)</strong> complete graph</td>
-            <td>Every agent sees all peer contributions and critiques every round</td>
-            <td>All-to-all conversation room; maximum coordination capability and highest token consumption.</td>
-          </tr>
-        </tbody>
-      </table>
     </div>
   </div>
 
@@ -507,7 +357,7 @@
   const urlParams = new URLSearchParams(window.location.search);
   let state = {
     animated: urlParams.get('animate') === '1' || urlParams.get('animate') === 'true',
-    numbering: 'reference' // 'reference' (3,4 / 1,2) or 'linear' (1,2 / 3,4)
+    numbering: 'reference' // 'reference' (3,4 / 1,2)
   };
 
   function renderAllDiagrams() {
@@ -520,11 +370,11 @@
     document.getElementById('diagram-pooled').innerHTML = 
       InterdependenceViz.getDiagramSVG('pooled', opts);
 
-    document.getElementById('diagram-reciprocal').innerHTML = 
-      InterdependenceViz.getDiagramSVG('reciprocal', opts);
-
     document.getElementById('diagram-sequential').innerHTML = 
       InterdependenceViz.getDiagramSVG('sequential', opts);
+
+    document.getElementById('diagram-reciprocal').innerHTML = 
+      InterdependenceViz.getDiagramSVG('reciprocal', opts);
 
     document.getElementById('diagram-comprehensive').innerHTML = 
       InterdependenceViz.getDiagramSVG('comprehensive', opts);
@@ -544,13 +394,6 @@
       icon.innerText = '▶';
       text.innerText = 'Animate Flow';
     }
-    renderAllDiagrams();
-  }
-
-  function toggleNumbering() {
-    state.numbering = state.numbering === 'reference' ? 'linear' : 'reference';
-    const label = document.getElementById('numModeLabel');
-    label.innerText = state.numbering === 'reference' ? '3,4 / 1,2 (Ref)' : '1,2 / 3,4 (Linear)';
     renderAllDiagrams();
   }
 

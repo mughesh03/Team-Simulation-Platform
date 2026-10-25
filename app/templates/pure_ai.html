@@ -158,7 +158,7 @@
   /* ── Diagram ── */
   .pb-diagram {
     min-height: 124px; height: 124px; background: #f8fafc; border: 1px dashed #d7dde8;
-    border-radius: 10px; margin: 10px 0 11px;
+    border-radius: 10px; margin: 10px 0 0;
     display: flex; align-items: center; justify-content: center;
     color: var(--p-blue); font-size: 13px; font-weight: 600; gap: 6px; padding: 6px 10px;
     box-sizing: border-box;
@@ -422,7 +422,7 @@ const st = {
   reporterAgent: 'None',
   reps: 50, concurrency: 4, seed: '2026', conditionName: 'Main condition', researcherNotes: '',
   llmAssignment: 'Same model for all agents',
-  provider: 'Mock', model: 'Mock Backend (Demo)', apiKey: '',
+  provider: 'Mock', model: 'Mock Backend (Demo)', customModelId: '', apiKey: '',
   temperature: 0.7, maxTokens: 4000, baseURL: '', timeout: 120,
   perAgentLLM: []
 };
@@ -430,7 +430,7 @@ const st = {
 /* ensure perAgentLLM length matches agents */
 function ensureArrays() {
   while (st.perAgentLLM.length < st.agents)
-    st.perAgentLLM.push({ provider: st.provider, model: st.model, apiKey: '' });
+    st.perAgentLLM.push({ provider: st.provider, model: st.model, customModelId: st.customModelId || '', apiKey: '' });
   st.perAgentLLM = st.perAgentLLM.slice(0, st.agents);
   while (st.agentDetails.length < st.agents) st.agentDetails.push('');
   st.agentDetails = st.agentDetails.slice(0, st.agents);
@@ -521,11 +521,11 @@ function renderStructure() {
     ['Pooled','Members work independently; contributions are aggregated into a shared output.','Independent contribution','Aggregation'],
     ['Sequential','Work is passed through structured handoffs in a fixed pipeline order.','Workflow order','Handoffs'],
     ['Reciprocal — Chain','Adjacent members exchange outputs in both directions along a chain.','Bidirectional chain','Iterative handoffs'],
-    ['Reciprocal — Comprehensive','Every member exchanges outputs with every other member.','Fully connected','Mutual adjustment']
+    ['Team — Comprehensive','Every member exchanges outputs with every other member.','Fully connected','Mutual adjustment']
   ];
   return `
   <div class="pb-section-head">
-    <div><h2>2. Task Interdependence Structure</h2><p>Select the interdependence structure that determines how work and information flow among agents.</p></div>
+    <div><h2>2. Task Interdependence Structure</h2></div>
     <div style="display:flex; gap:10px; align-items:center;">
       <button class="pb-live-btn" type="button" onclick="window.open('/interdependence?animate=1','_blank')">
         <span class="pb-live-pulse"></span>
@@ -541,9 +541,8 @@ function renderStructure() {
       ${structs.map(s => `
       <div class="pb-card ${st.structure === s[0] ? 'selected' : ''}" onclick="st.structure='${s[0]}';render()">
         <span class="pb-check">✓</span>
-        <h3>${s[0]}</h3><p>${s[1]}</p>
+        <h3>${s[0]}</h3>
         ${structDiagram(s[0])}
-        <div class="pb-meta"><span class="pb-chip">${s[2]}</span><span class="pb-chip">${s[3]}</span></div>
       </div>`).join('')}
     </div>
   </div>
@@ -715,14 +714,28 @@ function renderExperiment() {
 }
 
 /* ── Step 6: LLM ── */
-function providerOpts(cur) {
-  return ['Institution gateway','OpenAI','Anthropic','Google','Local / OpenAI-compatible','Mock'].map(x => `<option${sel(cur,x)}>${x}</option>`).join('');
+function modelFieldHtml(provider, model, customModelId, agentIdx) {
+  const p = LlmCatalog.normalizeProvider(provider);
+  if (LlmCatalog.isOther(p)) {
+    const oninput = agentIdx === null ? 'st.customModelId=this.value' : `st.perAgentLLM[${agentIdx}].customModelId=this.value`;
+    return `
+    <div class="pb-field">
+      <label>Model</label>
+      <input type="text" value="${esc(customModelId || '')}" placeholder="provider/model-id · e.g. openai/gpt-4.1"
+        oninput="${oninput}">
+      <div class="pb-note">Use LiteLLM format <code>provider/model-name</code>. See
+        <a href="https://docs.litellm.ai/docs/providers" target="_blank" rel="noopener noreferrer">provider &amp; model IDs</a>.</div>
+    </div>`;
+  }
+  const onModel = agentIdx === null ? 'pbSetModel(null,this.value)' : `pbSetModel(${agentIdx},this.value)`;
+  return `
+    <div class="pb-field">
+      <label>Model</label>
+      <select onchange="${onModel}">${LlmCatalog.modelOptionsHtml(p, model)}</select>
+    </div>`;
 }
-function modelOpts(cur) {
-  return ['Kimi K2.5','GPT-4o','GPT-4 Turbo','GPT-3.5 Turbo','Claude 3.5 Sonnet','Claude 3 Opus','Gemini 2.5 Pro','Llama 3.1 70B','Custom model','Mock Backend (Demo)'].map(x => `<option${sel(cur,x)}>${x}</option>`).join('');
-}
-function apiField(value, model, idx) {
-  const mock = model === 'Mock Backend (Demo)';
+function apiField(value, provider, model, idx) {
+  const mock = LlmCatalog.isMock(provider, model);
   const oninput = idx === null ? 'st.apiKey=this.value' : `st.perAgentLLM[${idx}].apiKey=this.value`;
   return `
   <div class="pb-field">
@@ -734,6 +747,12 @@ function apiField(value, model, idx) {
 
 function renderLLM() {
   ensureArrays();
+  st.provider = LlmCatalog.normalizeProvider(st.provider);
+  LlmCatalog.syncModelsForSlice(st);
+  st.perAgentLLM.forEach((a) => {
+    a.provider = LlmCatalog.normalizeProvider(a.provider);
+    LlmCatalog.syncModelsForSlice(a);
+  });
   return `
   <div class="pb-section-head">
     <div><h2>6. LLM Configuration</h2><p>Select the model(s) for your team. Enter the API key immediately after model selection, or use the Mock Demo without a key.</p></div>
@@ -755,14 +774,11 @@ function renderLLM() {
     <div class="pb-fieldrow">
       <div class="pb-field">
         <label>Provider</label>
-        <select onchange="st.provider=this.value">${providerOpts(st.provider)}</select>
+        <select onchange="pbSetProvider(null,this.value)">${LlmCatalog.providerOptionsHtml(st.provider)}</select>
       </div>
-      <div class="pb-field">
-        <label>Model</label>
-        <select onchange="st.model=this.value;if(this.value==='Mock Backend (Demo)'){st.provider='Mock';st.apiKey=''}render()">${modelOpts(st.model)}</select>
-      </div>
+      ${modelFieldHtml(st.provider, st.model, st.customModelId, null)}
     </div>
-    ${apiField(st.apiKey, st.model, null)}
+    ${apiField(st.apiKey, st.provider, st.model, null)}
   </div>
   ` : `
   <div class="pb-subhead">Select Models for Your Team</div>
@@ -773,14 +789,11 @@ function renderLLM() {
     <div class="pb-fieldrow">
       <div class="pb-field">
         <label>Provider</label>
-        <select onchange="st.perAgentLLM[${i}].provider=this.value">${providerOpts(st.perAgentLLM[i].provider)}</select>
+        <select onchange="pbSetProvider(${i},this.value)">${LlmCatalog.providerOptionsHtml(st.perAgentLLM[i].provider)}</select>
       </div>
-      <div class="pb-field">
-        <label>Model</label>
-        <select onchange="st.perAgentLLM[${i}].model=this.value;if(this.value==='Mock Backend (Demo)'){st.perAgentLLM[${i}].provider='Mock';st.perAgentLLM[${i}].apiKey=''}render()">${modelOpts(st.perAgentLLM[i].model)}</select>
-      </div>
+      ${modelFieldHtml(st.perAgentLLM[i].provider, st.perAgentLLM[i].model, st.perAgentLLM[i].customModelId || '', i)}
     </div>
-    ${apiField(st.perAgentLLM[i].apiKey, st.perAgentLLM[i].model, i)}
+    ${apiField(st.perAgentLLM[i].apiKey, st.perAgentLLM[i].provider, st.perAgentLLM[i].model, i)}
   </div>`).join('')}
   `}
   <div class="pb-subhead">Generation Settings</div>
@@ -842,10 +855,17 @@ function protocolObj() {
     max_output_tokens: Number(st.maxTokens), base_url: st.baseURL || null, timeout_seconds: Number(st.timeout)
   };
   if (st.llmAssignment === 'Same model for all agents') {
-    obj.llm.provider = st.provider; obj.llm.model = st.model;
-    obj.llm.mock_demo = st.model === 'Mock Backend (Demo)';
+    obj.llm.provider = st.provider;
+    obj.llm.model = LlmCatalog.displayModel(st.provider, st.model, st.customModelId);
+    obj.llm.model_id = LlmCatalog.resolveSlug(st.provider, st.model, st.customModelId);
+    obj.llm.mock_demo = LlmCatalog.isMock(st.provider, st.model);
   } else {
-    obj.llm.agents = st.perAgentLLM.slice(0, st.agents).map(x => ({ provider: x.provider, model: x.model, mock_demo: x.model === 'Mock Backend (Demo)' }));
+    obj.llm.agents = st.perAgentLLM.slice(0, st.agents).map(x => ({
+      provider: x.provider,
+      model: LlmCatalog.displayModel(x.provider, x.model, x.customModelId),
+      model_id: LlmCatalog.resolveSlug(x.provider, x.model, x.customModelId),
+      mock_demo: LlmCatalog.isMock(x.provider, x.model)
+    }));
   }
   obj.capture = ['configuration','agent instructions','prompts','model/version metadata','random seed','full interaction trace','scoring rules'];
   return obj;
@@ -854,8 +874,8 @@ function protocolObj() {
 function renderProtocol() {
   const spec = JSON.stringify(protocolObj(), null, 2);
   const modelLabel = st.llmAssignment === 'Same model for all agents'
-    ? esc(st.model)
-    : st.perAgentLLM.slice(0, st.agents).map(a => esc(a.model)).join(', ');
+    ? esc(LlmCatalog.displayModel(st.provider, st.model, st.customModelId))
+    : st.perAgentLLM.slice(0, st.agents).map(a => esc(LlmCatalog.displayModel(a.provider, a.model, a.customModelId))).join(', ');
   return `
   <div class="pb-section-head">
     <div><h2>7. Review &amp; Launch</h2><p>Verify the configuration before launching. You can also save the configuration to Experiment History for later reuse.</p></div>
@@ -938,7 +958,7 @@ function go(i) {
 
 function useMockDemo() {
   st.llmAssignment = 'Same model for all agents';
-  st.provider = 'Mock'; st.model = 'Mock Backend (Demo)'; st.apiKey = '';
+  st.provider = 'Mock'; st.model = 'Mock Backend (Demo)'; st.customModelId = ''; st.apiKey = '';
   render();
 }
 
@@ -981,7 +1001,8 @@ function pbSaveHistory(status = 'Saved', silent = false) {
 /* ── Backend Launch ── */
 async function pbLaunch() {
   ensureArrays();
-  let isMock = st.model === 'Mock Backend (Demo)' || st.provider === 'Mock';
+  const llmSlugs = LlmCatalog.buildLlmSlugs(st);
+  let isMock = llmSlugs.isMock;
 
   // If no API key and not already mock, auto-fallback to mock
   if (!isMock && !st.apiKey) {
@@ -1007,8 +1028,10 @@ async function pbLaunch() {
     researcher_notes: st.researcherNotes || '',
     llm: {
       multi_llm: st.llmAssignment !== 'Same model for all agents',
-      provider_model: isMock ? 'mock' : st.model.toLowerCase().replace(/\s+/g, '-'),
-      selected_models: [isMock ? 'mock' : st.model.toLowerCase().replace(/\s+/g, '-')],
+      provider_model: isMock ? 'mock' : llmSlugs.provider_model,
+      selected_models: isMock
+        ? (llmSlugs.selected_models.length ? llmSlugs.selected_models.map(() => 'mock') : ['mock'])
+        : llmSlugs.selected_models,
       api_key: st.apiKey || '',
       temperature: st.temperature,
       max_tokens: st.maxTokens,
@@ -1028,7 +1051,9 @@ async function pbLaunch() {
         'Sequential': 'sequential',
         'Reciprocal': 'reciprocal_chain',
         'Reciprocal — Chain': 'reciprocal_chain',
-        'Reciprocal — Comprehensive': 'reciprocal_comprehensive'
+        'Reciprocal — Comprehensive': 'reciprocal_comprehensive',
+        'Team — Comprehensive': 'reciprocal_comprehensive',
+        'Team - Comprehensive': 'reciprocal_comprehensive'
       })[st.structure] || 'sequential',
       reporter_agent: st.reporterAgent === 'None' ? null : parseInt(st.reporterAgent),
       agent_configs: agentInstructions.map((desc, i) => ({ agent_id: i + 1, description: desc }))

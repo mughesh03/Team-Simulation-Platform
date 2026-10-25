@@ -357,6 +357,10 @@ async def _call_litellm(model: str, messages: list[dict], params: dict) -> tuple
         # Optional: Some setups need standard Bearer headers
         kwargs["extra_headers"] = {"Authorization": f"Bearer {api_key}"}
 
+    ui_base = (params.get("base_url") or "").strip().rstrip("/")
+    if ui_base and "api_base" not in kwargs:
+        kwargs["api_base"] = ui_base
+
     try:
         response = await litellm.acompletion(**kwargs)
         text = response.choices[0].message.content or ""

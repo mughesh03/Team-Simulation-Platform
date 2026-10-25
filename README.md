@@ -111,7 +111,7 @@ Structures map to orchestration in `app/main.py`:
 | Pooled | `pooled` | Independent member contributions, aggregated output |
 | Sequential | `sequential` | Handoffs through a fixed pipeline |
 | Reciprocal — Chain | `reciprocal_chain` | Bidirectional exchange with immediate neighbors |
-| Reciprocal — Comprehensive | `reciprocal_comprehensive` | Full mutual adjustment within the team |
+| Team — Comprehensive | `reciprocal_comprehensive` | Full mutual adjustment within the team |
 
 Legacy labels (`team`, `parallel`, `reciprocal`) may still appear in older configs or logs.
 

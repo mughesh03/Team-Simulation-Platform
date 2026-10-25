@@ -90,7 +90,7 @@
   .pb-card.selected .pb-check{display:flex;}
   .pb-kicker{font-size:10px;font-weight:700;color:var(--p-purple);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;}
   .pb-cite{font-size:10px;color:#667085;margin-top:9px;border-top:1px solid #eef1f4;padding-top:8px;}
-  .pb-diagram{min-height:124px;height:124px;background:#f8fafc;border:1px dashed #d7dde8;border-radius:10px;margin:10px 0 11px;display:flex;align-items:center;justify-content:center;color:var(--p-purple);font-size:13px;font-weight:600;gap:6px;padding:6px 10px;box-sizing:border-box;}
+  .pb-diagram{min-height:124px;height:124px;background:#f8fafc;border:1px dashed #d7dde8;border-radius:10px;margin:10px 0 0;display:flex;align-items:center;justify-content:center;color:var(--p-purple);font-size:13px;font-weight:600;gap:6px;padding:6px 10px;box-sizing:border-box;}
   .pb-diagram svg, .pb-diagram .iv-svg{width:100%;height:100%;max-height:118px;overflow:visible;display:block;}
   .pb-structure-svg{width:100%;height:96px;overflow:visible;}
   .pb-structure-svg .member{fill:#d92938;stroke:#b91c1c;stroke-width:1.5;}
@@ -224,13 +224,13 @@ const st = {
   participantInstructions: 'Observe the AI team as it works. You may pause the conversation and send an additional message when intervention is allowed.',
   reps: 1, concurrency: 1, seed: '', conditionName: '', researcherNotes: '',
   llmAssignment: 'Same model for all agents',
-  provider: 'Mock', model: 'Mock Backend (Demo)', apiKey: '',
+  provider: 'Mock', model: 'Mock Backend (Demo)', customModelId: '', apiKey: '',
   temperature: 0.7, maxTokens: 4000, baseURL: '', timeout: 120,
   perAgentLLM: []
 };
 
 function ensureArrays() {
-  while (st.perAgentLLM.length < st.agents) st.perAgentLLM.push({provider:st.provider,model:st.model,apiKey:''});
+  while (st.perAgentLLM.length < st.agents) st.perAgentLLM.push({provider:st.provider,model:st.model,customModelId:st.customModelId||'',apiKey:''});
   st.perAgentLLM = st.perAgentLLM.slice(0, st.agents);
   while (st.agentDetails.length < st.agents) st.agentDetails.push('');
   st.agentDetails = st.agentDetails.slice(0, st.agents);
@@ -301,10 +301,10 @@ function structDiagram(name) {
 }
 
 function renderStructure() {
-  const structs=[['Pooled','Members work independently; contributions are aggregated into a shared output.','Independent contribution','Aggregation'],['Sequential','Work is passed through structured handoffs in a fixed pipeline order.','Workflow order','Handoffs'],['Reciprocal — Chain','Adjacent members exchange outputs in both directions along a chain.','Bidirectional chain','Iterative handoffs'],['Reciprocal — Comprehensive','Every member exchanges outputs with every other member.','Fully connected','Mutual adjustment']];
+  const structs=[['Pooled','Members work independently; contributions are aggregated into a shared output.','Independent contribution','Aggregation'],['Sequential','Work is passed through structured handoffs in a fixed pipeline order.','Workflow order','Handoffs'],['Reciprocal — Chain','Adjacent members exchange outputs in both directions along a chain.','Bidirectional chain','Iterative handoffs'],['Team — Comprehensive','Every member exchanges outputs with every other member.','Fully connected','Mutual adjustment']];
   return `
   <div class="pb-section-head">
-    <div><h2>2. Task Interdependence Structure</h2><p>Select the interdependence structure that determines how work and information flow among agents.</p></div>
+    <div><h2>2. Task Interdependence Structure</h2></div>
     <div style="display:flex; gap:10px; align-items:center;">
       <button class="pb-live-btn" type="button" onclick="window.open('/interdependence?animate=1','_blank')">
         <span class="pb-live-pulse"></span>
@@ -319,9 +319,8 @@ function renderStructure() {
     <div class="pb-cards">
       ${structs.map(s=>`
       <div class="pb-card ${st.structure===s[0]?'selected':''}" onclick="st.structure='${s[0]}';render()">
-        <span class="pb-check">✓</span><h3>${s[0]}</h3><p>${s[1]}</p>
+        <span class="pb-check">✓</span><h3>${s[0]}</h3>
         ${structDiagram(s[0])}
-        <div class="pb-meta"><span class="pb-chip">${s[2]}</span><span class="pb-chip">${s[3]}</span></div>
       </div>`).join('')}
     </div>
   </div>
@@ -470,16 +469,26 @@ function renderExperiment() {
 }
 
 /* ── Step 7: LLM ── */
-function providerOpts(cur){return['Institution gateway','OpenAI','Anthropic','Google','Local / OpenAI-compatible','Mock'].map(x=>`<option${sel(cur,x)}>${x}</option>`).join('')}
-function modelOpts(cur){return['Kimi K2.5','GPT-4o','GPT-4 Turbo','GPT-3.5 Turbo','Claude 3.5 Sonnet','Claude 3 Opus','Gemini 2.5 Pro','Llama 3.1 70B','Custom model','Mock Backend (Demo)'].map(x=>`<option${sel(cur,x)}>${x}</option>`).join('')}
-function apiField(value,model,idx){
-  const mock=model==='Mock Backend (Demo)';
-  const oi=idx===null?'st.apiKey=this.value':`st.perAgentLLM[${idx}].apiKey=this.value`;
+function modelFieldHtml(provider, model, customModelId, agentIdx) {
+  const p = LlmCatalog.normalizeProvider(provider);
+  if (LlmCatalog.isOther(p)) {
+    const oninput = agentIdx === null ? 'st.customModelId=this.value' : `st.perAgentLLM[${agentIdx}].customModelId=this.value`;
+    return `<div class="pb-field"><label>Model</label><input type="text" value="${esc(customModelId||'')}" placeholder="provider/model-id · e.g. openai/gpt-4.1" oninput="${oninput}"><div class="pb-note">Use LiteLLM format <code>provider/model-name</code>. See <a href="https://docs.litellm.ai/docs/providers" target="_blank" rel="noopener noreferrer">provider &amp; model IDs</a>.</div></div>`;
+  }
+  const onModel = agentIdx === null ? 'pbSetModel(null,this.value)' : `pbSetModel(${agentIdx},this.value)`;
+  return `<div class="pb-field"><label>Model</label><select onchange="${onModel}">${LlmCatalog.modelOptionsHtml(p, model)}</select></div>`;
+}
+function apiField(value, provider, model, idx) {
+  const mock = LlmCatalog.isMock(provider, model);
+  const oi = idx === null ? 'st.apiKey=this.value' : `st.perAgentLLM[${idx}].apiKey=this.value`;
   return `<div class="pb-field"><label>API Key ${mock?'(not required for Mock Demo)':'(required for live model access)'}</label><input type="password" value="${mock?'':esc(value)}" ${mock?'disabled':''} placeholder="${mock?'Mock agents run without a key':'Enter API key'}" oninput="${oi}"><div class="pb-note">API keys are used only for the active session and are not saved in Experiment History or exported protocols.</div></div>`;
 }
 
 function renderLLM() {
   ensureArrays();
+  st.provider = LlmCatalog.normalizeProvider(st.provider);
+  LlmCatalog.syncModelsForSlice(st);
+  st.perAgentLLM.forEach(a => { a.provider = LlmCatalog.normalizeProvider(a.provider); LlmCatalog.syncModelsForSlice(a); });
   return `
   <div class="pb-section-head">
     <div><h2>7. LLM Configuration</h2><p>Select the model(s) for your team. Enter the API key immediately after model selection, or use the Mock Demo without a key.</p></div>
@@ -498,10 +507,10 @@ function renderLLM() {
   ${st.llmAssignment==='Same model for all agents'?`
   <div class="pb-llm-box">
     <div class="pb-fieldrow">
-      <div class="pb-field"><label>Provider</label><select onchange="st.provider=this.value">${providerOpts(st.provider)}</select></div>
-      <div class="pb-field"><label>Model</label><select onchange="st.model=this.value;if(this.value==='Mock Backend (Demo)'){st.provider='Mock';st.apiKey=''}render()">${modelOpts(st.model)}</select></div>
+      <div class="pb-field"><label>Provider</label><select onchange="pbSetProvider(null,this.value)">${LlmCatalog.providerOptionsHtml(st.provider)}</select></div>
+      ${modelFieldHtml(st.provider, st.model, st.customModelId, null)}
     </div>
-    ${apiField(st.apiKey,st.model,null)}
+    ${apiField(st.apiKey, st.provider, st.model, null)}
   </div>
   `:`
   <div class="pb-subhead">Select Models for Your Team</div>
@@ -510,10 +519,10 @@ function renderLLM() {
   <div class="pb-llm-box">
     <div class="pb-field" style="margin-bottom:8px;"><label>Agent ${i+1}</label></div>
     <div class="pb-fieldrow">
-      <div class="pb-field"><label>Provider</label><select onchange="st.perAgentLLM[${i}].provider=this.value">${providerOpts(st.perAgentLLM[i].provider)}</select></div>
-      <div class="pb-field"><label>Model</label><select onchange="st.perAgentLLM[${i}].model=this.value;if(this.value==='Mock Backend (Demo)'){st.perAgentLLM[${i}].provider='Mock';st.perAgentLLM[${i}].apiKey=''}render()">${modelOpts(st.perAgentLLM[i].model)}</select></div>
+      <div class="pb-field"><label>Provider</label><select onchange="pbSetProvider(${i},this.value)">${LlmCatalog.providerOptionsHtml(st.perAgentLLM[i].provider)}</select></div>
+      ${modelFieldHtml(st.perAgentLLM[i].provider, st.perAgentLLM[i].model, st.perAgentLLM[i].customModelId || '', i)}
     </div>
-    ${apiField(st.perAgentLLM[i].apiKey,st.perAgentLLM[i].model,i)}
+    ${apiField(st.perAgentLLM[i].apiKey, st.perAgentLLM[i].provider, st.perAgentLLM[i].model, i)}
   </div>`).join('')}
   `}
   <div class="pb-subhead">Generation Settings</div>
@@ -544,8 +553,19 @@ function protocolObj(){
   obj.human_in_the_loop={intervention_timing:'After each round',role:st.participantRole,custom_role_description:st.participantRole==='Custom Role'?st.customRoleDescription:null,message_recipients:{one_agent:st.hitlOne,multiple_agents:st.hitlMultiple,entire_team:st.hitlTeam},participant_instructions:st.participantInstructions};
   obj.session={sessions:Number(st.reps),concurrency:Number(st.concurrency),seed:st.seed,experiment_label:st.conditionName,researcher_notes:st.researcherNotes};
   obj.llm={assignment:st.llmAssignment,temperature:Number(st.temperature),max_output_tokens:Number(st.maxTokens),base_url:st.baseURL||null,timeout_seconds:Number(st.timeout)};
-  if(st.llmAssignment==='Same model for all agents'){obj.llm.provider=st.provider;obj.llm.model=st.model;obj.llm.mock_demo=st.model==='Mock Backend (Demo)';}
-  else obj.llm.agents=st.perAgentLLM.slice(0,st.agents).map(x=>({provider:x.provider,model:x.model,mock_demo:x.model==='Mock Backend (Demo)'}));
+  if(st.llmAssignment==='Same model for all agents'){
+    obj.llm.provider=st.provider;
+    obj.llm.model=LlmCatalog.displayModel(st.provider,st.model,st.customModelId);
+    obj.llm.model_id=LlmCatalog.resolveSlug(st.provider,st.model,st.customModelId);
+    obj.llm.mock_demo=LlmCatalog.isMock(st.provider,st.model);
+  } else {
+    obj.llm.agents=st.perAgentLLM.slice(0,st.agents).map(x=>({
+      provider:x.provider,
+      model:LlmCatalog.displayModel(x.provider,x.model,x.customModelId),
+      model_id:LlmCatalog.resolveSlug(x.provider,x.model,x.customModelId),
+      mock_demo:LlmCatalog.isMock(x.provider,x.model)
+    }));
+  }
   obj.capture=['configuration','agent instructions','prompts','model/version metadata','random seed','full interaction trace','scoring rules','human intervention log'];
   return obj;
 }
@@ -553,7 +573,9 @@ function protocolObj(){
 function renderProtocol(){
   const spec=JSON.stringify(protocolObj(),null,2);
   const recipients=[st.hitlOne?'one agent':'',st.hitlMultiple?'selected agents':'',st.hitlTeam?'entire team':''].filter(Boolean).join(', ')||'no recipients';
-  const modelLabel=st.llmAssignment==='Same model for all agents'?esc(st.model):st.perAgentLLM.slice(0,st.agents).map(a=>esc(a.model)).join(', ');
+  const modelLabel=st.llmAssignment==='Same model for all agents'
+    ? esc(LlmCatalog.displayModel(st.provider,st.model,st.customModelId))
+    : st.perAgentLLM.slice(0,st.agents).map(a=>esc(LlmCatalog.displayModel(a.provider,a.model,a.customModelId))).join(', ');
   return `
   <div class="pb-section-head">
     <div><h2>8. Review &amp; Launch</h2><p>Verify the configuration before creating the participant session. You can also save the configuration to Experiment History for later reuse.</p></div>
@@ -628,7 +650,7 @@ function render(){
   document.getElementById('pbWork').innerHTML = fns[st.step]();
 }
 function go(i){if(i<0||i>=STEPS.length)return;st.step=i;render();window.scrollTo({top:0,behavior:'smooth'});}
-function useMockDemo(){st.llmAssignment='Same model for all agents';st.provider='Mock';st.model='Mock Backend (Demo)';st.apiKey='';render();}
+function useMockDemo(){st.llmAssignment='Same model for all agents';st.provider='Mock';st.model='Mock Backend (Demo)';st.customModelId='';st.apiKey='';render();}
 
 function pbCopySpec(){const el=document.getElementById('pbSpec');if(!el)return;navigator.clipboard.writeText(el.innerText);alert('Study specification copied to clipboard.');}
 function pbDownloadSpec(){const el=document.getElementById('pbSpec');if(!el)return;const blob=new Blob([el.innerText],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='hitl_study_protocol.json';a.click();URL.revokeObjectURL(a.href);}
@@ -646,7 +668,8 @@ function pbSaveHistory(status='Saved', silent=false){
 /* ── Backend Launch ── */
 async function pbLaunch() {
   ensureArrays();
-  let isMock = st.model==='Mock Backend (Demo)'||st.provider==='Mock';
+  const llmSlugs = LlmCatalog.buildLlmSlugs(st);
+  let isMock = llmSlugs.isMock;
   // Auto-fallback to mock when no API key
   if(!isMock && !st.apiKey) isMock = true;
 
@@ -669,7 +692,9 @@ async function pbLaunch() {
         'Sequential': 'sequential',
         'Reciprocal': 'reciprocal_chain',
         'Reciprocal — Chain': 'reciprocal_chain',
-        'Reciprocal — Comprehensive': 'reciprocal_comprehensive'
+        'Reciprocal — Comprehensive': 'reciprocal_comprehensive',
+        'Team — Comprehensive': 'reciprocal_comprehensive',
+        'Team - Comprehensive': 'reciprocal_comprehensive'
       })[st.structure] || 'sequential',
       reporter_agent: st.reporterAgent === 'None' ? null : parseInt(st.reporterAgent),
       agent_configs: (st.composition==='Homogeneous agents'?Array(st.agents).fill(st.agentDetails[0]||''):st.agentDetails.slice(0,st.agents)).map((desc, i) => ({ agent_id: i + 1, description: desc }))
@@ -682,11 +707,15 @@ async function pbLaunch() {
       participant_instructions: st.participantInstructions
     },
     llm: {
-      provider_model: isMock ? 'mock' : st.model.toLowerCase().replace(/\s+/g,'-'),
-      selected_models: [isMock ? 'mock' : st.model.toLowerCase().replace(/\s+/g,'-')],
+      provider_model: isMock ? 'mock' : llmSlugs.provider_model,
+      selected_models: isMock
+        ? (llmSlugs.selected_models.length ? llmSlugs.selected_models.map(() => 'mock') : ['mock'])
+        : llmSlugs.selected_models,
       api_key: st.apiKey || '',
       temperature: st.temperature,
-      max_tokens: st.maxTokens
+      max_tokens: st.maxTokens,
+      base_url: st.baseURL || null,
+      timeout: st.timeout
     }
   };
   try{

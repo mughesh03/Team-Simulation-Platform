@@ -6,27 +6,13 @@ const $ = id => document.getElementById(id);
 
 // ─── Model Labels ──────────────────────────────────────────────────
 const MODEL_LABELS = {
-  'kimi-k2.5':         'Kimi K2.5',
-  'gpt-4o':            'OpenAI GPT-4o',
-  'gpt-4-turbo':       'OpenAI GPT-4 Turbo',
-  'gpt-3.5-turbo':     'OpenAI GPT-3.5 Turbo',
-  'claude-3.5-sonnet': 'Claude 3.5 Sonnet',
-  'claude-3-opus':     'Claude 3 Opus',
-  'gemini-2.5-pro':    'Gemini 2.5 Pro',
-  'llama-3.1-70b':     'Llama 3.1 70B',
-  'mock':              'Mock Backend'
+  'kimi-k2.5': 'Kimi K2.5',
+  mock: 'Mock Backend',
 };
 
 const MODEL_COLORS = {
-  'kimi-k2.5':         '#1783ff',
-  'gpt-4o':            '#10a37f',
-  'gpt-4-turbo':       '#10a37f',
-  'gpt-3.5-turbo':     '#19c37d',
-  'claude-3.5-sonnet': '#d97706',
-  'claude-3-opus':     '#b45309',
-  'gemini-2.5-pro':    '#4285f4',
-  'llama-3.1-70b':     '#7c3aed',
-  'mock':              '#6b7280'
+  'kimi-k2.5': '#1783ff',
+  mock: '#6b7280',
 };
 
 // ─── API Helper ────────────────────────────────────────────────────
