@@ -1,4 +1,4 @@
-# Team AI Platform
+# AI Team Platform
 
 FastAPI research platform for **organizational team studies** with AI-only teams and **human-in-the-loop (HITL)** sessions. Researchers configure study design in step-by-step builders, launch batch simulations or participant sessions, and review dashboards, transcripts, and exports.
 

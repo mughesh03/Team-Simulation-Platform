@@ -1,5 +1,5 @@
 /* ===================================================================
-   Team AI Platform — Frontend Application Logic
+   AI Team Platform — Frontend Application Logic
    =================================================================== */
 
 const $ = id => document.getElementById(id);
