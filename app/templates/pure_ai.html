@@ -408,7 +408,7 @@ const st = {
   step: 0,
   phenomenon: 'Coordination under distributed expertise',
   researchQuestion: 'How does interdependence structure affect whether AI teams surface and use unique expertise?',
-  structure: 'Reciprocal — Chain',
+  structure: 'Reciprocal',
   task: 'Hidden-Profile Decision Task',
   customTaskName: '', customTaskPrompt: '', customTaskScoring: '', taskScored: 'Yes',
   agents: 4, rounds: 6,
@@ -516,12 +516,22 @@ function structDiagram(name) {
   return `<div class="pb-diagram"><svg class="pb-structure-svg" viewBox="0 0 280 104" role="img" aria-label="${name} interdependence diagram">${defs}${body}</svg></div>`;
 }
 
+function normalizeStructureName() {
+  const legacy = {
+    'Reciprocal — Chain': 'Reciprocal',
+    'Team — Comprehensive': 'Team / Comprehensive',
+    'Team - Comprehensive': 'Team / Comprehensive',
+  };
+  if (legacy[st.structure]) st.structure = legacy[st.structure];
+}
+
 function renderStructure() {
+  normalizeStructureName();
   const structs = [
     ['Pooled','Members work independently; contributions are aggregated into a shared output.','Independent contribution','Aggregation'],
     ['Sequential','Work is passed through structured handoffs in a fixed pipeline order.','Workflow order','Handoffs'],
-    ['Reciprocal — Chain','Adjacent members exchange outputs in both directions along a chain.','Bidirectional chain','Iterative handoffs'],
-    ['Team — Comprehensive','Every member exchanges outputs with every other member.','Fully connected','Mutual adjustment']
+    ['Reciprocal','Adjacent members exchange outputs in both directions along a chain.','Bidirectional chain','Iterative handoffs'],
+    ['Team / Comprehensive','Every member exchanges outputs with every other member.','Fully connected','Mutual adjustment']
   ];
   return `
   <div class="pb-section-head">
@@ -1053,7 +1063,8 @@ async function pbLaunch() {
         'Reciprocal — Chain': 'reciprocal_chain',
         'Reciprocal — Comprehensive': 'reciprocal_comprehensive',
         'Team — Comprehensive': 'reciprocal_comprehensive',
-        'Team - Comprehensive': 'reciprocal_comprehensive'
+        'Team - Comprehensive': 'reciprocal_comprehensive',
+        'Team / Comprehensive': 'reciprocal_comprehensive'
       })[st.structure] || 'sequential',
       reporter_agent: st.reporterAgent === 'None' ? null : parseInt(st.reporterAgent),
       agent_configs: agentInstructions.map((desc, i) => ({ agent_id: i + 1, description: desc }))

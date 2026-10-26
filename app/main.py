@@ -33,7 +33,7 @@ from .auth import (
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 BASE_DIR = Path(__file__).resolve().parent
-app = FastAPI(title="Team Simulation Platform - Combined MVP")
+app = FastAPI(title="Team AI Platform - Combined MVP")
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
 

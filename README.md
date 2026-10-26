@@ -1,4 +1,4 @@
-# Team Simulation Platform
+# Team AI Platform
 
 FastAPI research platform for **organizational team studies** with AI-only teams and **human-in-the-loop (HITL)** sessions. Researchers configure study design in step-by-step builders, launch batch simulations or participant sessions, and review dashboards, transcripts, and exports.
 
@@ -110,8 +110,8 @@ Structures map to orchestration in `app/main.py`:
 | --- | --- | --- |
 | Pooled | `pooled` | Independent member contributions, aggregated output |
 | Sequential | `sequential` | Handoffs through a fixed pipeline |
-| Reciprocal — Chain | `reciprocal_chain` | Bidirectional exchange with immediate neighbors |
-| Team — Comprehensive | `reciprocal_comprehensive` | Full mutual adjustment within the team |
+| Reciprocal | `reciprocal_chain` | Bidirectional exchange with immediate neighbors |
+| Team / Comprehensive | `reciprocal_comprehensive` | Full mutual adjustment within the team |
 
 Legacy labels (`team`, `parallel`, `reciprocal`) may still appear in older configs or logs.
 

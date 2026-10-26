@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Team Interdependence Models — Team Simulation Platform{% endblock %}
+{% block title %}Team Interdependence Models — Team AI Platform{% endblock %}
 
 {% block extra_head %}
 <style>
@@ -111,20 +111,11 @@
 
   .id-canvas-header {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-end;
     align-items: center;
     margin-bottom: 24px;
     padding-bottom: 16px;
     border-bottom: 1px solid #f1f5f9;
-  }
-  .id-canvas-header h2 {
-    font-size: 17px;
-    font-weight: 700;
-    color: #334155;
-    margin: 0;
-    display: flex;
-    align-items: center;
-    gap: 8px;
   }
   .id-canvas-legend {
     display: flex;
@@ -288,15 +279,6 @@
   <!-- Main 2x2 Canvas Container -->
   <div class="id-canvas-card">
     <div class="id-canvas-header">
-      <h2>
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <rect x="3" y="3" width="7" height="7"></rect>
-          <rect x="14" y="3" width="7" height="7"></rect>
-          <rect x="14" y="14" width="7" height="7"></rect>
-          <rect x="3" y="14" width="7" height="7"></rect>
-        </svg>
-        Canonical 2×2 Interaction Models
-      </h2>
       <div class="id-canvas-legend">
         <div class="id-legend-item"><span class="id-legend-dot"></span> Team Agents (1, 2, 3, 4)</div>
         <div class="id-legend-item"><span class="id-legend-rect"></span> Shared Output</div>
@@ -304,7 +286,7 @@
       </div>
     </div>
 
-    <!-- The 2x2 Grid conforming to reference image & Pure AI order: Pooled, Sequential, Reciprocal — Chain, Team — Comprehensive -->
+    <!-- The 2x2 Grid: Pooled, Sequential, Reciprocal, Team / Comprehensive -->
     <div class="id-2x2-grid" id="interdependenceGrid">
       
       <!-- 1. Pooled -->
@@ -327,20 +309,20 @@
         </div>
       </div>
 
-      <!-- 3. Reciprocal — Chain -->
+      <!-- 3. Reciprocal -->
       <div class="id-cell" id="card-reciprocal">
         <div class="id-title-box">
-          <h3 class="id-cell-title">Reciprocal — Chain</h3>
+          <h3 class="id-cell-title">Reciprocal</h3>
         </div>
         <div class="id-diagram-box" id="diagram-reciprocal">
           <!-- Reciprocal SVG rendered dynamically -->
         </div>
       </div>
 
-      <!-- 4. Team — Comprehensive -->
+      <!-- 4. Team / Comprehensive -->
       <div class="id-cell" id="card-comprehensive">
         <div class="id-title-box">
-          <h3 class="id-cell-title">Team — Comprehensive</h3>
+          <h3 class="id-cell-title">Team / Comprehensive</h3>
         </div>
         <div class="id-diagram-box" id="diagram-comprehensive">
           <!-- Comprehensive SVG rendered dynamically -->

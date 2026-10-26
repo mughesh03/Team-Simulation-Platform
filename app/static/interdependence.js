@@ -62,17 +62,17 @@
     },
     reciprocal: {
       id: 'reciprocal',
-      name: 'Reciprocal — Chain',
-      title: 'Reciprocal — Chain',
-      titleLines: ['Reciprocal — Chain'],
+      name: 'Reciprocal',
+      title: 'Reciprocal',
+      titleLines: ['Reciprocal'],
       description: 'Adjacent members exchange inputs and outputs bidirectionally in an iterative feedback loop, with final synthesis delivered to Output above the group.',
       coordination: 'Mutual Adjustment & Iterative Feedback'
     },
     comprehensive: {
       id: 'comprehensive',
-      name: 'Team — Comprehensive',
-      title: 'Team — Comprehensive',
-      titleLines: ['Team — Comprehensive'],
+      name: 'Team / Comprehensive',
+      title: 'Team / Comprehensive',
+      titleLines: ['Team / Comprehensive'],
       description: 'Arranged in a 2×2 grid where every pair of members is interconnected with bidirectional arrows for full swarm consensus, delivering final collective output to the right.',
       coordination: 'Continuous Mutual Adjustment & Group Consensus'
     }

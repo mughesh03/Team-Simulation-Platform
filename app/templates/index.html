@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Team Simulation Platform{% endblock %}
+{% block title %}Team AI Platform{% endblock %}
 
 {% block extra_head %}
 <style>
@@ -55,53 +55,57 @@
   }
   .ov-choice a:hover { background: #2646c0; }
 
-  /* ── Right side: 4 Floating Feature Cards ── */
+  /* ── Study-design capability cards (5) ── */
   .ov-feats {
-    display: grid; grid-template-columns: 1fr 1fr; gap: 20px;
-    align-content: stretch;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    align-content: start;
   }
   .ov-feat {
     background: var(--p-panel); border: 1px solid var(--p-line);
-    border-radius: 24px; padding: 26px 24px 24px;
+    border-radius: 20px; padding: 22px 22px 20px;
     box-shadow: var(--p-shadow);
     transition: transform .15s, box-shadow .15s, border-color .15s;
-    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-height: 0;
   }
   .ov-feat:hover {
     transform: translateY(-2px);
     box-shadow: 0 8px 26px rgba(31,42,68,.1);
     border-color: #cbd5e1;
   }
-  .ov-feat-badge {
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
+  .ov-feat-capstone {
+    grid-column: 1 / -1;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 18px;
+    background: linear-gradient(135deg, #f8faff 0%, #fff 100%);
+    border-color: #dce3ff;
+  }
+  .ov-feat-icon {
+    width: 40px; height: 40px; flex-shrink: 0;
+    border-radius: 12px;
     background: var(--p-blue2);
     color: var(--p-blue);
-    font-size: 13px;
-    font-weight: 700;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; line-height: 1;
   }
-  .ov-feat h3 { font-size: 16px; font-weight: 700; color: var(--p-navy); margin: 0 0 10px; line-height: 1.35; }
-  .ov-feat p  { font-size: 13.5px; color: var(--p-muted); line-height: 1.55; margin: 0; }
-
-  /* ── 3 Floating Capability Pills ── */
-  .ov-caps {
-    display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;
+  .ov-feat-capstone .ov-feat-icon {
+    width: 44px; height: 44px; font-size: 20px;
   }
-  .ov-cap {
-    background: var(--p-panel); border: 1px solid var(--p-line);
-    border-radius: 24px; padding: 24px 28px;
-    box-shadow: var(--p-shadow); display: flex; gap: 16px; align-items: flex-start;
-    transition: transform .15s;
+  .ov-feat-body { flex: 1; min-width: 0; }
+  .ov-feat h3 { font-size: 15px; font-weight: 700; color: var(--p-navy); margin: 0 0 8px; line-height: 1.35; }
+  .ov-feat p  { font-size: 13px; color: var(--p-muted); line-height: 1.55; margin: 0; }
+  .ov-feat-link {
+    margin-top: auto;
+    font-size: 12px; font-weight: 700; color: var(--p-blue);
+    text-decoration: none;
+    padding-top: 4px;
   }
-  .ov-cap:hover { transform: translateY(-2px); }
-  .ov-cap-icon { font-size: 26px; color: var(--p-blue); flex-shrink: 0; margin-top: -2px; }
-  .ov-cap h4 { font-size: 15px; font-weight: 700; color: var(--p-navy); margin: 0 0 6px; }
-  .ov-cap p  { font-size: 14px; color: var(--p-muted); line-height: 1.45; margin: 0; }
+  .ov-feat-link:hover { text-decoration: underline; }
 
   /* ── Floating Experiment History Card ── */
   .ov-history {
@@ -160,12 +164,12 @@
   @media (max-width: 1024px) {
     .ov-shell { padding: 30px; }
     .ov-top-row { grid-template-columns: 1fr; }
-    .ov-caps { grid-template-columns: 1fr; }
     .ov-feats { grid-template-columns: 1fr 1fr; }
   }
   @media (max-width: 640px) {
     .ov-shell { padding: 20px; }
     .ov-feats { grid-template-columns: 1fr; }
+    .ov-feat-capstone { flex-direction: column; }
     .ov-choices { grid-template-columns: 1fr; }
   }
 </style>
@@ -198,46 +202,48 @@
       </div>
     </div>
 
-    <!-- 4 Floating Feature Cards -->
-    <div class="ov-feats">
+    <div class="ov-feats" aria-label="Study design capabilities">
       <div class="ov-feat">
-        <div class="ov-feat-badge">1</div>
-        <h3>Interdependence as a manipulation</h3>
-        <p>Operationalize pooled, sequential, reciprocal, and team comprehensive interdependence as executable coordination structures.</p>
+        <div class="ov-feat-icon" aria-hidden="true">⇄</div>
+        <div class="ov-feat-body">
+          <h3>Task Interdependence</h3>
+          <p>Set pooled, sequential, reciprocal, or team / comprehensive structures as your coordination manipulation.</p>
+          <a class="ov-feat-link" href="/interdependence">View models →</a>
+        </div>
       </div>
       <div class="ov-feat">
-        <div class="ov-feat-badge">2</div>
-        <h3>Team-research task library</h3>
-        <p>Use tasks adapted from organizational and team research, or bring a custom task with researcher-defined scoring.</p>
+        <div class="ov-feat-icon" aria-hidden="true">▦</div>
+        <div class="ov-feat-body">
+          <h3>Task Library</h3>
+          <p>Start from team-research paradigms or define a custom task with your own prompt and scoring rules.</p>
+          <a class="ov-feat-link" href="/task-library">Open library →</a>
+        </div>
       </div>
       <div class="ov-feat">
-        <div class="ov-feat-badge">3</div>
-        <h3>Simple heterogeneous team setup</h3>
-        <p>Choose homogeneous or heterogeneous agents. Give each agent a flexible context field for persona, expertise, or constraints.</p>
+        <div class="ov-feat-icon" aria-hidden="true">⬡</div>
+        <div class="ov-feat-body">
+          <h3>Team Setup</h3>
+          <p>Choose agent count, rounds, homogeneous or heterogeneous roles, and per-agent instructions before launch.</p>
+          <a class="ov-feat-link" href="/pure-ai">Configure team →</a>
+        </div>
       </div>
       <div class="ov-feat">
-        <div class="ov-feat-badge">4</div>
-        <h3>Human-in-the-loop interventions</h3>
-        <p>In the HITL builder, participants can pause the agent conversation and message one, selected, or all agents.</p>
+        <div class="ov-feat-icon" aria-hidden="true">⏸</div>
+        <div class="ov-feat-body">
+          <h3>Human Interventions</h3>
+          <p>In HITL studies, participants pause the AI discussion and message one agent, selected agents, or the full team.</p>
+          <a class="ov-feat-link" href="/hitl">Build HITL study →</a>
+        </div>
+      </div>
+      <div class="ov-feat ov-feat-capstone">
+        <div class="ov-feat-icon" aria-hidden="true">⚙</div>
+        <div class="ov-feat-body">
+          <h3>LLM Configuration Only</h3>
+          <p>Theory, structure, task, and team design come first. Model provider, API key, and generation settings are configured in the final step before you launch.</p>
+        </div>
       </div>
     </div>
 
-  </div>
-
-  <!-- ── 3 Floating Capability Pills ── -->
-  <div class="ov-caps">
-    <div class="ov-cap">
-      <div class="ov-cap-icon">⇄</div>
-      <div><h4>Structure</h4><p>Manipulate how work and intermediate outputs flow among agents.</p></div>
-    </div>
-    <div class="ov-cap">
-      <div class="ov-cap-icon">▦</div>
-      <div><h4>Research task configuration</h4><p>Combine established team-research paradigms with custom researcher tasks.</p></div>
-    </div>
-    <div class="ov-cap">
-      <div class="ov-cap-icon">⚙</div>
-      <div><h4>LLM configuration at the end</h4><p>Keep theory and study design upfront while preserving model-level configuration before launch.</p></div>
-    </div>
   </div>
 
   <!-- ── Floating Experiment History Card ── -->
