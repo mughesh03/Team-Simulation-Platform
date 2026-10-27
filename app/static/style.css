@@ -510,12 +510,6 @@ footer {
   color: var(--text-secondary);
   margin-top: auto;
 }
-footer a {
-  color: var(--accent);
-  text-decoration: none;
-  font-weight: 500;
-}
-footer a:hover { text-decoration: underline; }
 
 @media (max-width: 768px) {
   .grid-2 { grid-template-columns: 1fr; }
